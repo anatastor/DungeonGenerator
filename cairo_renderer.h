@@ -27,7 +27,7 @@ void render_render (Renderer *);
 
 
 void render_fill (Renderer *, const int);
-void render_line (Renderer *, const int, const int, const int, const int, const int);
+void render_line (Renderer *, const int, const int, const int, const int, const int, const int);
 void render_rect (Renderer *r, const int, const int, const int, const int, const int);
 void render_quad (Renderer *r, const int, const int, const int, const int);
 

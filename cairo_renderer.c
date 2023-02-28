@@ -61,12 +61,14 @@ _render_line (Renderer *r, const int x1, const int y1, const int x2, const int y
 
 
 void
-render_line (Renderer *r, const int x1, const int y1, const int x2, const int y2, const int hex)
-{
+render_line (Renderer *r, const int x1, const int y1, const int x2, const int y2, const int w, const int hex)
+{   
+    cairo_set_line_width (r->cr, w);
     render_setColor (r, hex);
     cairo_move_to (r->cr, x1, y1);
     cairo_line_to (r->cr, x2, y2);
     cairo_stroke (r->cr);
+    cairo_set_line_width (r->cr, 2);
 }
 
 

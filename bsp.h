@@ -1,6 +1,6 @@
 
-#ifndef _bsp_
-#define _bsp_
+#ifndef _BSP_
+#define _BSP_
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,15 +9,24 @@
 #include "rng.h"
 
 
+#define MIN_ROOM_SIZE 3
+#define MIN_RECT_SIZE MIN_ROOM_SIZE + 2
+
+
+typedef struct
+{
+    int x;
+    int y;
+} Point;
+
+
 typedef struct Room
 {
-    int posX;
-    int posY;
+    Point pos;
     int width;
     int height;
 
-    int centerX;
-    int centerY;
+    Point center;
 
     int color;
 
@@ -27,34 +36,27 @@ typedef struct Room
 
 typedef struct Rect
 {
-    int posX;
-    int posY;
+    Point pos;
     int width;
     int height;
+
+    Point center;
+
     int color;
 
-    struct Rect *parent;
-    struct Rect *left;
-    struct Rect *right;
-    
     Room *room;
+
+    struct Rect *parent;
+    struct Rect *childLeft;
+    struct Rect *childRight;
 } Rect;
 
 
-Rect rect_init (const int, const int, const int, const int);
-Rect *rect_create (Rect *const, const int, const int, const int, const int);
+Point point (const int, const int);
 
-void rect_free (Rect *rect);
+Rect *rect_create (Rect *const, const Point, const int, const int);
 
-
-
-void bsp (Rect *, const int, const int);
-
-Room *room_create (const int, const int, const int, const int);
-
-
-void create_rooms (Rect *, const int);
-void create_corridors (Rect *);
+void bsp (Rect **, const int, const int);
 
 
 #endif 
