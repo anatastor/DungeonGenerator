@@ -167,6 +167,7 @@ create_rooms (Rect *rect, const int min)
         int x = rng_between (rect->posX, rect->posX + rect->width - w);
         int y = rng_between (rect->posY, rect->posY + rect->height - h);
         rect->room = room_create (x, y, w, h);
+        //rect->room = room_create (x + 1, y + 1, w - 2, h - 2);
         //rect->room = room_create (rect->posX + 1, rect->posY + 1, 3, 3);
         return;
     }
@@ -229,33 +230,42 @@ shortestDistance (Rect *rect, Room *src)
 }
 
 
+int
+signf (const int x, const int f)
+{
+    return f * ((x > 0) - (x < 0));
+}
+
+
 Room *
 corridor_create (Room *r1, Room *r2)
 {
     int dx = r2->centerX - r1->centerX;
     int dy = r2->centerY - r1->centerY;
-
-    int w = 2;
+    
+    int w = 1;
 
     Room *r;
 
     if (abs (dx) > abs (dy))
     {
-        r = room_create (r1->centerX, r1->centerY, dx + w, w);
+        r = room_create (r1->centerX, r1->centerY, dx + signf (dx, w), w);
         if (abs (dy))
-            r->next = room_create (r->posX + dx, r->posY, w, dy);
+            r->next = room_create (r->posX + dx, r->posY + w, w, dy + signf (dy, w));
     }
     else
     {
-        r = room_create (r1->centerX, r1->centerY, w, dy + w);
+        r = room_create (r1->centerX, r1->centerY, w, dy + signf (dy, w));
         if (abs (dx))
-            r->next = room_create (r->posX, r->posY + dy, dx, w);
+            r->next = room_create (r->posX + w, r->posY + dy, dx + signf (dx, w), w);
     }
-        
+    
+    /*
     r->color = 0x8b4513;
     if (r->next)
         //r->next->color = r->color;
         r->next->color = 0xff8040;
+    */
 
     return r;
 }

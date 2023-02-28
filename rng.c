@@ -33,6 +33,13 @@ rng_between (const int min, const int max)
 }
 
 
+float
+rng_pct (void)
+{
+    return (float) rng_between (0, 1000000000) / 1000000000.0;
+}
+
+
 int
 rng_color_hex (void)
 {
