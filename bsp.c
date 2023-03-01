@@ -2,6 +2,9 @@
 #include "bsp.h"
 
 
+int room_count = 0;
+
+
 Point
 point (const int x, const int y)
 {
@@ -23,6 +26,7 @@ rect_create (Rect *const parent, const Point pos, const int width, const int hei
     Rect *rect = malloc (sizeof (Rect));
     if (! rect)
         return NULL;
+
 
     rect->parent = parent;
     rect->childLeft = NULL;
@@ -53,106 +57,129 @@ bsp_divide (Rect *const rect)
     if (rect->width > rect->height)
     {
         int x = rect->pos.x + rng_between (f1 * rect->width / d, f2 * rect->width / d);
+        /*
         rect->childLeft = rect_create (rect, point (rect->pos.x + 1, rect->pos.y + 1),
                 x - rect->pos.x - 2, rect->height - 2);
         rect->childRight = rect_create (rect, point (x + 1, rect->pos.y + 1),
                 rect->width - x + rect->pos.x - 2, rect->height - 2);
-        /*
+        */
         rect->childLeft = rect_create (rect, rect->pos,
                 x - rect->pos.x, rect->height);
         rect->childRight = rect_create (rect, point (x + offset, rect->pos.y),
                 rect->width - x + rect->pos.x - offset, rect->height);
-        */
     }
     else
     {
         int y = rect->pos.y + rng_between (f1 * rect->height / d, f2 * rect->height / d);
-        
+        /* 
         rect->childLeft = rect_create (rect, point (rect->pos.x + 1, rect->pos.y + 1),
                 rect->width - 2, y - rect->pos.y - 2);
         rect->childRight = rect_create (rect, point (rect->pos.x + 1, y + 1),
                 rect->width - 2, rect->height - y + rect->pos.y - 2);
-        /*
+        */
         rect->childLeft = rect_create (rect, rect->pos,
                 rect->width, y - rect->pos.y);
         rect->childRight = rect_create (rect, point (rect->pos.x, y + offset),
                 rect->width, rect->height - y + rect->pos.y - offset);
-        */
     }
 }
 
 
 Room *
-room_closest_to_point (Rect *const rect, const Point point, const int iteration, Room **left, Room **right)
-{   
+room_closest_to_point (Rect *const rect, const Point point)
+{
     if (! rect)
         return NULL;
 
-    Room *_left = room_closest_to_point (rect->childLeft, point, iteration + 1, NULL, NULL);
-    Room *_right = room_closest_to_point (rect->childRight, point, iteration + 1, NULL, NULL);
+    Room *curr = rect->room;
 
-    if (! iteration)
-    {
-        *left = _left;
-        *right = _right;
-        return NULL;
-    }
+    Room *left = room_closest_to_point (rect->childLeft, point);
+    Room *right = room_closest_to_point (rect->childRight, point);
+    /*
+    printf ("<%i> [%i] [%i]\n", rect->room->count,
+            (left) ? left->count : 999,
+            (right) ? right->count : 999);
+    */
+    //printf ("<%p> [%p] [%p]\n", rect->room, left, right);
 
     Room *tmp;
-
-    if (_left && _right)
+    if (left && right)
     {
-        float dl = point_distance (_left->center, point);
-        float dr = point_distance (_right->center, point);
-        tmp = (dl <= dr) ? _left : _right;
-    }
-    else if (_left)
-        tmp = _left;
-    else if (_right)
-        tmp = _right;
-    else
-        tmp = rect->room;
-
-    if (iteration == 1)
-    {
-        float dc = point_distance (rect->room->center, point);
-        float dt = point_distance (tmp->center, point);
-        return (dc <= dt) ? rect->room : tmp;
+        float dl = point_distance (left->center, point);
+        float dr = point_distance (right->center, point);
+        //printf ("\tdl: %f\tdr: %f\n", dl, dr);
+        tmp = (dl <= dr) ? left : right;
     }
     else
-        return tmp;
+        return rect->room;
+    
+    float dt = point_distance (tmp->center, point);
+    float dc = point_distance (curr->center, point);
+    //printf ("\tdc: %f\tdt: %f\n", dc, dt);
 
-    return NULL;
+    return (dc <= dt) ? curr : tmp;
 }
 
 
 int
-room_raycast (Room *r1, Room *r2, const int dir)
+room_raycast (Room *r1, Room *r2, const int dir, int *const min, int *const max)
 {   
     // dir 0 == x
     // dir 1 == y
     if (dir == 1)
     {
-        //printf ("X: %i, %i\n", r1->center.x, r2->center.x);
+        int xmin = 0;
+        int xmax = 0;
+        int x;
         for (int i = 0; i <= r1->width; i++)
         {
-            int x = r1->pos.x + i;
+            x = r1->pos.x + i;
             if (x >= r2->pos.x && x <= r2->pos.x + r2->width)
-                return x;
+            {
+                if (! xmin)
+                    xmin = x;
+                else
+                    xmax = x;
+            }
+        }
+        if (! xmax)
+            xmax = x;
+
+        if (xmin && xmax)
+        {
+            *min = xmin;
+            *max = xmax;
+            return 1;
         }
     }
     else if (dir == 0)
     {
-        //printf ("Y: %i, %i\n", r1->center.y, r2->center.y);
+        int ymin = 0;
+        int ymax = 0;
+        int y;
         for (int i = 0; i <= r1->height; i++)
         {
-            int y = r1->pos.y + i;
-            if (y >= r2->pos.y && y <= r2->pos.y + r2->height)
-                return y;
+            y = r1->pos.y + i;
+            if ((y >= r2->pos.y && y <= r2->pos.y + r2->height))
+            {
+                if (! ymin)
+                    ymin = y;
+                else
+                    ymax = y;
+            }
+        }
+        if (! ymax)
+            ymax = y;
+
+        if (ymin && ymax)
+        {
+            *min = ymin;
+            *max = ymax;
+            return 1;
         }
     }
 
-    return -1;
+    return 0;
 }
 
 
@@ -163,6 +190,7 @@ room_create (const Point pos, const int width, const int height)
     room->pos = pos;
     room->width = width;
     room->height = height;
+    room->count = room_count++;
 
     room->center = point (pos.x + width / 2, pos.y + height / 2);
 
@@ -172,42 +200,73 @@ room_create (const Point pos, const int width, const int height)
     return room;
 }
 
+
+int
+signf (const int x, const int f)
+{
+    return f * ((x > 0) - (x < 0));
+}
+
+
 void
 bsp_corridor (Rect *const rect)
 {
-    Room *left = NULL;
-    Room *right = NULL;
-    room_closest_to_point (rect, rect->center, 0, &left, &right);
-
-
+    Room *left = room_closest_to_point (rect->childLeft, rect->center);
+    Room *right = room_closest_to_point (rect->childRight, rect->center);
+    //room_closest_to_point (rect, rect->center, 0, &left, &right);
+    /*
     printf ("[%p] [%p]\n", left, right);
     printf ("C: (%i, %i) (%i, %i) (%i, %i)\n",
             rect->center.x, rect->center.y,
             left->center.x, left->center.y,
             right->center.x, right->center.y);
+    */
 
     int dx = right->center.x - left->center.x;
     int dy = right->center.y - left->center.y;
 
-    printf ("[%i, %i]\n", dx, dy);
-    rect->room = room_create (point (left->center.x, left->center.y), 2, 2);
-    
-    if (abs (dx) >= abs (dy))
-    {   
+    printf ("<%i> --> <%i>\n\tdx: %i\tdy: %i\n", left->count, right->count, dx, dy);
+    //printf ("<%i> dx, dy: %i, %i\n", room_count, dx, dy);
+    //rect->room = room_create (point (left->center.x, left->center.y), dx, dy);
+
+    int w = 1;
+    /*
+    if (abs (dx) == abs (dy))
+    {
+        rect->room = room_create (point (left->center.x, left->center.y), dx, dy);
         rect->room->color = 0xff0000;
-        /*
-        int y = room_raycast (left, right, 0);
-        if (y >= 0) // direct connection possible
-            rect->room = room_create (point (left->center.x, y), dx, 1);
-        */
+    }
+    */
+    if (abs (dx) >= abs (dy))
+    { 
+        int min;
+        int max;
+        if (room_raycast (left, right, 0, &min, &max))
+            rect->room = room_create (point (left->center.x, rng_between (min, max)), dx, w);
+        else
+        {
+            rect->room = room_create (point (left->center.x, left->center.y), dx + signf (dx, w), w);
+            rect->room->next = room_create (point (rect->room->pos.x + dx, rect->room->pos.y + w), w, dy + signf (dy, w));
+        }
+        rect->room->color = 0x524117; //rng_color_hex ();
     }
     else
     {
-        /*
-        int x = room_raycast (left, right, 1);
-        if (x >= 0)
-            rect->room = room_create (point (x, left->center.y), 1, dy);
-        */
+        int min;
+        int max;
+        if (room_raycast (left, right, 1, &min, &max))
+        {
+            printf ("MIN: %i\tMAX: %i\n", min, max);
+            rect->room = room_create (point (rng_between (min, max), left->center.y), w, dy);
+        }
+        else
+        {
+            rect->room = room_create (point (left->center.x, left->center.y), w, dy + signf (dy, w));
+            rect->room->next = room_create (point (rect->room->pos.x, rect->room->pos.y + dy), dx + signf (dx, w), w);
+        }
+
+        //rect->room->color = rng_color_hex ();
+        rect->room->color = 0x524117; //rng_color_hex ();
     }
 
     printf ("<%i, %i>\n", rect->room->center.x, rect->room->center.y);
@@ -232,6 +291,7 @@ bsp (Rect **r, const int iteration, const int offset)
     {
         bsp_divide (rect);
         int color = rng_color_hex ();
+        // TODO if (! rect->childLeft && ! rect->childRight)
         rect->childLeft->color = color;
         rect->childRight->color = color;
 
@@ -241,13 +301,13 @@ bsp (Rect **r, const int iteration, const int offset)
 
     if (rect->childLeft && rect->childRight) // build corridor and exit
     {
-        // get the room of each subtree which is closest to the other trees center
         bsp_corridor (rect);
         return;
     }
     else if (! rect->childLeft && ! rect->childRight) // end node --> create new room
     {
         rect->room = malloc (sizeof (Room));
+        rect->room->count = room_count++;
         int w1 = rng_between (MIN_ROOM_SIZE, rect->width - 2 * offset);
         int w2 = rng_between (MIN_ROOM_SIZE, rect->width - 2 * offset);
         rect->room->width = (w1 > w2) ? w1 : w2;

@@ -9,7 +9,7 @@
 #include "rng.h"
 
 
-#define MIN_ROOM_SIZE 3
+#define MIN_ROOM_SIZE 5
 #define MIN_RECT_SIZE MIN_ROOM_SIZE + 2
 
 
@@ -25,6 +25,8 @@ typedef struct Room
     Point pos;
     int width;
     int height;
+
+    int count;
 
     Point center;
 
