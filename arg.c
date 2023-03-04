@@ -9,7 +9,9 @@ const char *argp_program_bug_address =
   "<anatas.torsten@gmx.de>";
 
 struct Arguments arg = {
-    0, // flags
+    0, // flag debug
+    0, // flag color
+    0x0815, // seed
     5, // iterations
     25, // grid size
     40, // map width
@@ -24,6 +26,14 @@ parse_opt (int key, char *args, struct argp_state *state)
     {   
         case 'D':
             arg.flag_debug = 1;
+            break;
+
+        case 'C':
+            arg.flag_color = 1;
+            break;
+
+        case 's':
+            arg.seed = atoi (args);
             break;
 
         case 'i':

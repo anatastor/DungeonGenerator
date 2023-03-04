@@ -101,64 +101,55 @@ room_closest_to_vec2 (Rect *const rect, const Vec2 vec2)
 
 
 int
-room_raycast (Room *r1, Room *r2, const int dir, int *const min, int *const max)
+room_overlap (Room *r1, Room *r2, const int dir, int *const min, int *const max)
 {   
     // dir 0 == x
     // dir 1 == y
-    if (dir == 1)
+     
+    int _min;
+    int _max;
+    if (dir)
     {
-        int xmin = 0;
-        int xmax = 0;
-        int x;
-        for (int i = 0; i <= r1->width; i++)
-        {
-            x = r1->pos.x + i;
-            if (x >= r2->pos.x && x <= r2->pos.x + r2->width)
-            {
-                if (! xmin)
-                    xmin = x;
-                else
-                    xmax = x;
-            }
-        }
-        if (! xmax)
-            xmax = x;
-
-        if (xmin && xmax)
-        {
-            *min = xmin;
-            *max = xmax;
-            return 1;
-        }
+        // compare x positions
+        _min = (r1->pos.x >= r2->pos.x) ? r1->pos.x : r2->pos.x;
+        _max = (r1->pos.x + r1->width <= r2->pos.x + r2->width)
+            ? r1->pos.x + r1->width
+            : r2->pos.x + r2->width;
     }
-    else if (dir == 0)
-    {
-        int ymin = 0;
-        int ymax = 0;
-        int y;
-        for (int i = 0; i <= r1->height; i++)
-        {
-            y = r1->pos.y + i;
-            if ((y >= r2->pos.y && y <= r2->pos.y + r2->height))
-            {
-                if (! ymin)
-                    ymin = y;
-                else
-                    ymax = y;
-            }
-        }
-        if (! ymax)
-            ymax = y;
+    else
+    {   
+        // compare y positions
+        _min = (r1->pos.y >= r2->pos.y) ? r1->pos.y : r2->pos.y;
+        _max = (r1->pos.y + r1->height <= r2->pos.y + r2->height)
+            ? r1->pos.y + r1->height
+            : r2->pos.y + r2->height;
+    }
 
-        if (ymin && ymax)
-        {
-            *min = ymin;
-            *max = ymax;
-            return 1;
-        }
+    if (_min > _max - 1)
+        return 0;
+    else
+    {
+        *min = _min;
+        *max = _max - 1;
+        return 1;
     }
 
     return 0;
+}
+
+
+void
+room_set (Room *const room, const Vec2 pos, const int width, const int height)
+{
+    room->pos = pos;
+    room->width = width;
+    room->height = height;
+
+    room->center = vec2 (pos.x + width / 2, pos.y + height / 2);
+
+    room->next = NULL;
+
+    room->color = 0x8b4513;
 }
 
 
@@ -166,17 +157,33 @@ Room *
 room_create (const Vec2 pos, const int width, const int height)
 {
     Room *room = malloc (sizeof (Room));
-    room->pos = pos;
-    room->width = width;
-    room->height = height;
+    room_set (room, pos, width, height);
     room->count = room_count++;
-
-    room->center = vec2 (pos.x + width / 2, pos.y + height / 2);
-
-    room->next = NULL;
-
-    room->color = 0x8b4513;
     return room;
+}
+
+
+void
+room_set_from_vec2 (Room *const room, const Vec2 p1, const Vec2 p2)
+{
+    int xmin = (p1.x <= p2.x) ? p1.x : p2.x;
+    int xmax = (p1.x >= p2.x) ? p1.x : p2.x;
+    int ymax = (p1.y >= p2.y) ? p1.y : p2.y;
+    int ymin = (p1.y <= p2.y) ? p1.y : p2.y;
+
+    room_set (room, vec2 (xmin, ymin), xmax - xmin, ymax - ymin);
+}
+
+
+Room *
+room_create_from_vec2 (const Vec2 p1, const Vec2 p2)
+{       
+    int xmin = (p1.x <= p2.x) ? p1.x : p2.x;
+    int xmax = (p1.x >= p2.x) ? p1.x : p2.x;
+    int ymax = (p1.y >= p2.y) ? p1.y : p2.y;
+    int ymin = (p1.y <= p2.y) ? p1.y : p2.y;
+
+    return room_create (vec2 (xmin, ymin), xmax - xmin, ymax - ymin);
 }
 
 
@@ -188,67 +195,101 @@ signf (const int x, const int f)
 
 
 void
-bsp_corridor (Rect *const rect)
+bsp_corridor (Rect *const rect, const Vec2 p)
 {
-    Room *left = room_closest_to_vec2 (rect->childLeft, rect->center);
-    Room *right = room_closest_to_vec2 (rect->childRight, rect->center);
-    //room_closest_to_vec2 (rect, rect->center, 0, &left, &right);
-    /*
-    printf ("[%p] [%p]\n", left, right);
-    printf ("C: (%i, %i) (%i, %i) (%i, %i)\n",
-            rect->center.x, rect->center.y,
-            left->center.x, left->center.y,
-            right->center.x, right->center.y);
-    */
+    Room *left = room_closest_to_vec2 (rect->childLeft, p);
+    // pick room from right tree closest to result of left tree
+    Room *right = room_closest_to_vec2 (rect->childRight, left->center); 
+
+
+    Room **room;
+    Room *tmp;
+    if (! rect->room)
+        room = &rect->room;
+    else
+    {
+        for (tmp = rect->room; tmp && tmp->next; tmp = tmp->next) ;
+        room = &tmp->next;
+    }
+
+    
+    if (arg.flag_debug)
+        printf ("[%i] to [%i] via (%i)\n", left->count, right->count, room_count);
+        
+    int w = 1;
+    int min;
+    int max;
+    if (room_overlap (left, right, 0, &min, &max))
+    {
+        // rooms do overlap in x direction
+        int dx = right->pos.x - left->pos.x - left->width;
+        if (max > min + 1)
+            *room = room_create (vec2 (left->pos.x + left->width, min + (max - min) / 2),
+                    dx, w);
+        else
+            *room = room_create (vec2 (left->pos.x + left->width, min),
+                    dx, w);
+
+        return;
+    }
+    else if (room_overlap (left, right, 1, &min, &max))
+    {
+        // rooms do overlap in y direction
+        int dy = right->pos.y - left->pos.y - left->height;
+        if (max > min + 1)
+            *room = room_create (vec2 (min + (max - min) / 2, left->pos.y + left->height),
+                    w, dy);
+        else
+            *room = room_create (vec2 (min, left->pos.y + left->height),
+                    w, dy);
+
+        return;
+    }
+
+    // rooms do not overlapp
+    // constructing L-shaped corridor
 
     int dx = right->center.x - left->center.x;
     int dy = right->center.y - left->center.y;
+    if (arg.flag_debug)
+        printf ("dx: %i\tdy: %i\n", dx, dy);
 
-    //printf ("<%i> --> <%i>\n\tdx: %i\tdy: %i\n", left->count, right->count, dx, dy);
-    //printf ("<%i> dx, dy: %i, %i\n", room_count, dx, dy);
-    //rect->room = room_create (vec2 (left->center.x, left->center.y), dx, dy);
-
-    int w = 1;
-    /*
-    if (abs (dx) == abs (dy))
-    {
-        rect->room = room_create (vec2 (left->center.x, left->center.y), dx, dy);
-        rect->room->color = 0xff0000;
-    }
-    */
     if (abs (dx) >= abs (dy))
-    { 
-        int min;
-        int max;
-        if (room_raycast (left, right, 0, &min, &max))
-            rect->room = room_create (vec2 (left->center.x, rng_between (min, max)), dx, w);
-        else
-        {
-            rect->room = room_create (vec2 (left->center.x, left->center.y), dx + signf (dx, w), w);
-            rect->room->next = room_create (vec2 (rect->room->pos.x + dx, rect->room->pos.y + w), w, dy + signf (dy, w));
-        }
-        rect->room->color = 0x524117; //rng_color_hex ();
+    {   
+        int x = (dx > 0) ? left->pos.x + left->width : left->pos.x;
+        *room = room_create_from_vec2 (
+                vec2 (x, left->center.y),
+                vec2 (x + 100 * dx, left->center.y + w));
+
+        room_overlap (rect->room, right, 1, &min, &max);
+
+        int posx = rng_between (min, max);
+        room_set_from_vec2 (*room,
+                vec2 (x, left->center.y),
+                vec2 (posx, left->center.y + w));
+        
+        (*room)->next = room_create_from_vec2 (
+                vec2 (posx, rect->room->pos.y + (dy > 0 ? 0 : 1)),
+                vec2 (posx + w, dy > 0 ? right->pos.y : right->pos.y + right->height));
     }
     else
-    {
-        int min;
-        int max;
-        if (room_raycast (left, right, 1, &min, &max))
-        {
-            //printf ("MIN: %i\tMAX: %i\n", min, max);
-            rect->room = room_create (vec2 (rng_between (min, max), left->center.y), w, dy);
-        }
-        else
-        {
-            rect->room = room_create (vec2 (left->center.x, left->center.y), w, dy + signf (dy, w));
-            rect->room->next = room_create (vec2 (rect->room->pos.x, rect->room->pos.y + dy), dx + signf (dx, w), w);
-        }
+    {   
+        int y = (dy > 0) ? left->pos.y + left->height : left->pos.y;
+        *room = room_create_from_vec2 (
+                vec2 (left->center.x, y),
+                vec2 (left->center.x + w, y + 100 * dy));
 
-        //rect->room->color = rng_color_hex ();
-        rect->room->color = 0x524117; //rng_color_hex ();
+        room_overlap (rect->room, right, 0, &min, &max);
+
+        int posy = rng_between (min, max);
+        room_set_from_vec2 (*room,
+                vec2 (left->center.x, y),
+                vec2 (left->center.x + w, posy));
+
+        (*room)->next = room_create_from_vec2 (
+                vec2 (rect->room->pos.x + (dx > 0 ? 0 : 1), posy),
+                vec2 (dx > 0 ? right->pos.x : right->pos.x + right->width, posy + w));
     }
-
-    //printf ("<%i, %i>\n", rect->room->center.x, rect->room->center.y);
 }
 
 
@@ -280,7 +321,8 @@ bsp (Rect **r, const int iteration, const int offset)
 
     if (rect->childLeft && rect->childRight) // build corridor and exit
     {
-        bsp_corridor (rect);
+        // TODO call bsp_corridor multiple times with diffrent points on higher iteration levels
+        bsp_corridor (rect, rect->center);
         return;
     }
     else if (! rect->childLeft && ! rect->childRight) // end node --> create new room

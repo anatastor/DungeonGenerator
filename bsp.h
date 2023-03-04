@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <math.h>
 
+#include "arg.h"
 #include "rng.h"
 
 

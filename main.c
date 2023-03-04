@@ -51,12 +51,14 @@ draw_room (Renderer *r, Rect *rect)
     {   
         //printf ("R: (%i, %i)\n", rect->room->center.x, rect->room->center.y);
         render_rect (r, ptr->pos.x * arg.grid_size, ptr->pos.y * arg.grid_size,
-                ptr->width * arg.grid_size, ptr->height * arg.grid_size, 0x757575);//ptr->color);
-        //render_quad (r, ptr->center.x * arg.grid_size, ptr->center.y * arg.grid_size, arg.grid_size, 0xff0000);
+                ptr->width * arg.grid_size, ptr->height * arg.grid_size, arg.flag_color ? ptr->color : 0x757575);
+        if (arg.flag_debug)
+            render_quad (r, ptr->center.x * arg.grid_size, ptr->center.y * arg.grid_size, arg.grid_size, 0xff0000);
     }
 
     //printf ("C: (%i, %i)\n", rect->center.x, rect->center.y);
-    //render_quad (r, rect->center.x * arg.grid_size, rect->center.y * arg.grid_size, arg.grid_size, 0x254117);
+    if (arg.flag_debug)
+        render_quad (r, rect->center.x * arg.grid_size, rect->center.y * arg.grid_size, arg.grid_size, 0x254117);
 }
 
 void
@@ -68,10 +70,11 @@ print_koordinates (Rect *rect)
     print_koordinates (rect->childLeft);
     print_koordinates (rect->childRight);
 
-    printf ("<%i> Top-Left (%i, %i) + (%i, %i)\n\tMitte (%i, %i)\n",
+    printf ("<%i> Top-Left (%i, %i) + %i, %i = (%i, %i)\n\tMitte (%i, %i)\n",
             rect->room->count,
             rect->room->pos.x, rect->room->pos.y,
             rect->room->width, rect->room->height,
+            rect->room->pos.x + rect->room->width, rect->room->pos.y + rect->room->height,
             rect->room->center.x, rect->room->center.y);
 }
 
@@ -81,21 +84,25 @@ main (int argc, char **argv)
 {   
     // INIT
     argp_parse (&argp, argc, argv, 0, 0, NULL);
-    rng_seed (SEED);
+    rng_seed (arg.seed);
     Renderer *renderer = render_create (arg.map_width * arg.grid_size, arg.map_height * arg.grid_size);
     render_fill (renderer, 0x0c090a);
 
     Rect *head = rect_create (NULL, vec2 (1, 1), arg.map_width - 2, arg.map_height - 2);
     bsp (&head, arg.iterations, 0);
-    draw_rect (renderer, head);
+    if (arg.flag_debug)
+        draw_rect (renderer, head);
     draw_room (renderer, head);
 
     if (arg.flag_debug)
         print_koordinates (head);
     
     render_grid (renderer, arg.grid_size, 0x757575);
-    cairo_set_line_width (renderer->cr, 5);
-    //render_grid (renderer, 10 * arg.grid_size, 0xff0000);
+    if (arg.flag_debug)
+    {
+        cairo_set_line_width (renderer->cr, 5);
+        render_grid (renderer, 10 * arg.grid_size, 0xff0000);
+    }
 
 
     render_save (renderer, arg.output_file);
