@@ -18,6 +18,7 @@ struct Arguments
     int grid_size;
     int map_width;
     int map_height;
+    char corridor_width;
     char *output_file;
 };
 
@@ -32,6 +33,7 @@ static struct argp_option options[] = {
     {"iterations", 'i', "iterations", 0, "Number of subdivisions (default: 7)"},
     {"map-size", 500, "WIDTHxHEIGHT", 0, "Map size in WIDTHxHEIGHT squares (default: 40x30)"},
     {"grid-size", 501, "pixels", 0, "Size of one square in pixels (default: 25)"},
+    {"corridor-width", 502, "width", 0, "Width of the corridors in Squares"},
     {"output", 'o', "FILE", 0, "Output to FILE (default: 'out.png')"},
     {0}
 };

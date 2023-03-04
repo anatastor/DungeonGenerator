@@ -59,9 +59,14 @@ typedef struct Rect
 
 Vec2 vec2 (const int, const int);
 
+
+
 Rect *rect_create (Rect *const, const Vec2, const int, const int);
 
 void bsp (Rect **rect, const int iteration, const int offset);
 
+
+
+void rect_free (Rect *rect);
 
 #endif 

@@ -82,7 +82,7 @@ print_koordinates (Rect *rect)
 int
 main (int argc, char **argv)
 {   
-    // INIT
+    /**+ INIT ***/
     argp_parse (&argp, argc, argv, 0, 0, NULL);
     rng_seed (arg.seed);
     Renderer *renderer = render_create (arg.map_width * arg.grid_size, arg.map_height * arg.grid_size);
@@ -106,6 +106,11 @@ main (int argc, char **argv)
 
 
     render_save (renderer, arg.output_file);
+    
+    /*** FREE & DESTROY ***/
+    rect_free (head);
+    head = NULL;
+
     renderer = render_destroy (renderer);
     return EXIT_SUCCESS;
 }

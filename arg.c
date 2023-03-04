@@ -16,6 +16,7 @@ struct Arguments arg = {
     25, // grid size
     40, // map width
     30, // map height
+    1, // corridor width
     "out.png" // output file
 };
 
@@ -50,6 +51,10 @@ parse_opt (int key, char *args, struct argp_state *state)
 
         case 501: // grid_size
             arg.grid_size = atoi (args);
+            break;
+
+        case 502: // corridor width
+            arg.corridor_width = atoi (args);
             break;
 
         default:
