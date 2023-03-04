@@ -5,23 +5,23 @@
 int room_count = 0;
 
 
-Point
-point (const int x, const int y)
+Vec2
+vec2 (const int x, const int y)
 {
-    Point p = {x, y};
+    Vec2 p = {x, y};
     return p;
 }
 
 
 float
-point_distance (const Point p1, const Point p2)
+vec2_distance (const Vec2 p1, const Vec2 p2)
 {
     return sqrt (pow (p1.x - p2.x, 2) + pow (p1.y - p2.y, 2));
 }
 
 
 Rect *
-rect_create (Rect *const parent, const Point pos, const int width, const int height)
+rect_create (Rect *const parent, const Vec2 pos, const int width, const int height)
 {
     Rect *rect = malloc (sizeof (Rect));
     if (! rect)
@@ -39,7 +39,8 @@ rect_create (Rect *const parent, const Point pos, const int width, const int hei
     rect->pos = pos;
     rect->width = width;
     rect->height = height;
-    rect->center = point (pos.x + width / 2, pos.y + height / 2);
+    rect->split = vec2 (0, 0);
+    rect->center = vec2 (pos.x + width / 2, pos.y + height / 2);
     return rect;
 }
 
@@ -52,70 +53,48 @@ bsp_divide (Rect *const rect)
     int f1 = d / 2;
     int f2 = d - d / 2 - 1;
 
-    int offset = 0; 
+    int offset = 2; 
 
-    if (rect->width > rect->height)
-    {
-        int x = rect->pos.x + rng_between (f1 * rect->width / d, f2 * rect->width / d);
-        /*
-        rect->childLeft = rect_create (rect, point (rect->pos.x + 1, rect->pos.y + 1),
-                x - rect->pos.x - 2, rect->height - 2);
-        rect->childRight = rect_create (rect, point (x + 1, rect->pos.y + 1),
-                rect->width - x + rect->pos.x - 2, rect->height - 2);
-        */
-        rect->childLeft = rect_create (rect, rect->pos,
-                x - rect->pos.x, rect->height);
-        rect->childRight = rect_create (rect, point (x + offset, rect->pos.y),
-                rect->width - x + rect->pos.x - offset, rect->height);
-    }
+    if (rect->width >= rect->height)
+        rect->split.x = rect->pos.x + rng_between (f1 * rect->width / d, f2 * rect->width / d);
     else
-    {
-        int y = rect->pos.y + rng_between (f1 * rect->height / d, f2 * rect->height / d);
-        /* 
-        rect->childLeft = rect_create (rect, point (rect->pos.x + 1, rect->pos.y + 1),
-                rect->width - 2, y - rect->pos.y - 2);
-        rect->childRight = rect_create (rect, point (rect->pos.x + 1, y + 1),
-                rect->width - 2, rect->height - y + rect->pos.y - 2);
-        */
-        rect->childLeft = rect_create (rect, rect->pos,
-                rect->width, y - rect->pos.y);
-        rect->childRight = rect_create (rect, point (rect->pos.x, y + offset),
-                rect->width, rect->height - y + rect->pos.y - offset);
-    }
+        rect->split.y = rect->pos.y + rng_between (f1 * rect->height / d, f2 * rect->height / d);
+
+    rect->childLeft = rect_create (rect, rect->pos,
+            (rect->split.x) ? rect->split.x - rect->pos.x : rect->width,
+            (rect->split.y) ? rect->split.y - rect->pos.y : rect->height);
+
+    rect->childRight = rect_create (rect,
+            vec2 ((rect->split.x) ? rect->split.x + offset : rect->pos.x,
+            (rect->split.y) ? rect->split.y + offset : rect->pos.y),
+            (rect->split.x) ? rect->width - rect->split.x + rect->pos.x - offset : rect->width,
+            (rect->split.y) ? rect->height - rect->split.y + rect->pos.y - offset : rect->height);
 }
 
 
 Room *
-room_closest_to_point (Rect *const rect, const Point point)
+room_closest_to_vec2 (Rect *const rect, const Vec2 vec2)
 {
     if (! rect)
         return NULL;
 
     Room *curr = rect->room;
 
-    Room *left = room_closest_to_point (rect->childLeft, point);
-    Room *right = room_closest_to_point (rect->childRight, point);
-    /*
-    printf ("<%i> [%i] [%i]\n", rect->room->count,
-            (left) ? left->count : 999,
-            (right) ? right->count : 999);
-    */
-    //printf ("<%p> [%p] [%p]\n", rect->room, left, right);
+    Room *left = room_closest_to_vec2 (rect->childLeft, vec2);
+    Room *right = room_closest_to_vec2 (rect->childRight, vec2);
 
     Room *tmp;
     if (left && right)
     {
-        float dl = point_distance (left->center, point);
-        float dr = point_distance (right->center, point);
-        //printf ("\tdl: %f\tdr: %f\n", dl, dr);
+        float dl = vec2_distance (left->center, vec2);
+        float dr = vec2_distance (right->center, vec2);
         tmp = (dl <= dr) ? left : right;
     }
     else
         return rect->room;
     
-    float dt = point_distance (tmp->center, point);
-    float dc = point_distance (curr->center, point);
-    //printf ("\tdc: %f\tdt: %f\n", dc, dt);
+    float dt = vec2_distance (tmp->center, vec2);
+    float dc = vec2_distance (curr->center, vec2);
 
     return (dc <= dt) ? curr : tmp;
 }
@@ -184,7 +163,7 @@ room_raycast (Room *r1, Room *r2, const int dir, int *const min, int *const max)
 
 
 Room *
-room_create (const Point pos, const int width, const int height)
+room_create (const Vec2 pos, const int width, const int height)
 {
     Room *room = malloc (sizeof (Room));
     room->pos = pos;
@@ -192,7 +171,7 @@ room_create (const Point pos, const int width, const int height)
     room->height = height;
     room->count = room_count++;
 
-    room->center = point (pos.x + width / 2, pos.y + height / 2);
+    room->center = vec2 (pos.x + width / 2, pos.y + height / 2);
 
     room->next = NULL;
 
@@ -211,9 +190,9 @@ signf (const int x, const int f)
 void
 bsp_corridor (Rect *const rect)
 {
-    Room *left = room_closest_to_point (rect->childLeft, rect->center);
-    Room *right = room_closest_to_point (rect->childRight, rect->center);
-    //room_closest_to_point (rect, rect->center, 0, &left, &right);
+    Room *left = room_closest_to_vec2 (rect->childLeft, rect->center);
+    Room *right = room_closest_to_vec2 (rect->childRight, rect->center);
+    //room_closest_to_vec2 (rect, rect->center, 0, &left, &right);
     /*
     printf ("[%p] [%p]\n", left, right);
     printf ("C: (%i, %i) (%i, %i) (%i, %i)\n",
@@ -225,15 +204,15 @@ bsp_corridor (Rect *const rect)
     int dx = right->center.x - left->center.x;
     int dy = right->center.y - left->center.y;
 
-    printf ("<%i> --> <%i>\n\tdx: %i\tdy: %i\n", left->count, right->count, dx, dy);
+    //printf ("<%i> --> <%i>\n\tdx: %i\tdy: %i\n", left->count, right->count, dx, dy);
     //printf ("<%i> dx, dy: %i, %i\n", room_count, dx, dy);
-    //rect->room = room_create (point (left->center.x, left->center.y), dx, dy);
+    //rect->room = room_create (vec2 (left->center.x, left->center.y), dx, dy);
 
     int w = 1;
     /*
     if (abs (dx) == abs (dy))
     {
-        rect->room = room_create (point (left->center.x, left->center.y), dx, dy);
+        rect->room = room_create (vec2 (left->center.x, left->center.y), dx, dy);
         rect->room->color = 0xff0000;
     }
     */
@@ -242,11 +221,11 @@ bsp_corridor (Rect *const rect)
         int min;
         int max;
         if (room_raycast (left, right, 0, &min, &max))
-            rect->room = room_create (point (left->center.x, rng_between (min, max)), dx, w);
+            rect->room = room_create (vec2 (left->center.x, rng_between (min, max)), dx, w);
         else
         {
-            rect->room = room_create (point (left->center.x, left->center.y), dx + signf (dx, w), w);
-            rect->room->next = room_create (point (rect->room->pos.x + dx, rect->room->pos.y + w), w, dy + signf (dy, w));
+            rect->room = room_create (vec2 (left->center.x, left->center.y), dx + signf (dx, w), w);
+            rect->room->next = room_create (vec2 (rect->room->pos.x + dx, rect->room->pos.y + w), w, dy + signf (dy, w));
         }
         rect->room->color = 0x524117; //rng_color_hex ();
     }
@@ -256,20 +235,20 @@ bsp_corridor (Rect *const rect)
         int max;
         if (room_raycast (left, right, 1, &min, &max))
         {
-            printf ("MIN: %i\tMAX: %i\n", min, max);
-            rect->room = room_create (point (rng_between (min, max), left->center.y), w, dy);
+            //printf ("MIN: %i\tMAX: %i\n", min, max);
+            rect->room = room_create (vec2 (rng_between (min, max), left->center.y), w, dy);
         }
         else
         {
-            rect->room = room_create (point (left->center.x, left->center.y), w, dy + signf (dy, w));
-            rect->room->next = room_create (point (rect->room->pos.x, rect->room->pos.y + dy), dx + signf (dx, w), w);
+            rect->room = room_create (vec2 (left->center.x, left->center.y), w, dy + signf (dy, w));
+            rect->room->next = room_create (vec2 (rect->room->pos.x, rect->room->pos.y + dy), dx + signf (dx, w), w);
         }
 
         //rect->room->color = rng_color_hex ();
         rect->room->color = 0x524117; //rng_color_hex ();
     }
 
-    printf ("<%i, %i>\n", rect->room->center.x, rect->room->center.y);
+    //printf ("<%i, %i>\n", rect->room->center.x, rect->room->center.y);
 }
 
 
@@ -316,10 +295,10 @@ bsp (Rect **r, const int iteration, const int offset)
         int h2 = rng_between (MIN_ROOM_SIZE, rect->height - 2 * offset);
         rect->room->height = (h1 > h2) ? h1 : h2;
 
-        rect->room->pos = point (rng_between (rect->pos.x + offset, rect->width - rect->room->width - offset),
+        rect->room->pos = vec2 (rng_between (rect->pos.x + offset, rect->width - rect->room->width - offset),
                 rng_between (rect->pos.y + offset, rect->height - rect->room->height - offset));
 
-        rect->room->center = point (rect->room->pos.x + rect->room->width / 2,
+        rect->room->center = vec2 (rect->room->pos.x + rect->room->width / 2,
                 rect->room->pos.y + rect->room->height / 2);
         
         rect->room->color = 0xc0c0c0;

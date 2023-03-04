@@ -2,13 +2,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "arg.h"
 #include "rng.h"
 #include "cairo_renderer.h"
 #include "bsp.h"
 
-#define GRID    10
-#define WIDTH   200
-#define HEIGHT  200
 
 #define OUTFILE "out.png"
 
@@ -27,11 +25,11 @@ draw_rect (Renderer *r, Rect *rect)
                 rect->pos.x + rect->width, rect->pos.y + rect->height,
                 rect->room);
     if (1)
-        render_rect (r, rect->pos.x * GRID, rect->pos.y * GRID,
-                rect->width * GRID, rect->height * GRID, rect->color);
+        render_rect (r, rect->pos.x * arg.grid_size, rect->pos.y * arg.grid_size,
+                rect->width * arg.grid_size, rect->height * arg.grid_size, rect->color);
     if (0)
-        render_line (r, rect->pos.x * GRID, rect->pos.y * GRID,
-                (rect->pos.x + rect->width) * GRID, (rect->pos.y + rect->height) * GRID,
+        render_line (r, rect->pos.x * arg.grid_size, rect->pos.y * arg.grid_size,
+                (rect->pos.x + rect->width) * arg.grid_size, (rect->pos.y + rect->height) * arg.grid_size,
                 7, 0x9f000f);
 
 
@@ -52,13 +50,13 @@ draw_room (Renderer *r, Rect *rect)
     for (Room *ptr = rect->room; ptr; ptr = ptr->next)
     {   
         //printf ("R: (%i, %i)\n", rect->room->center.x, rect->room->center.y);
-        render_rect (r, ptr->pos.x * GRID, ptr->pos.y * GRID,
-                ptr->width * GRID, ptr->height * GRID, 0x757575);//ptr->color);
-        //render_quad (r, ptr->center.x * GRID, ptr->center.y * GRID, GRID, 0xff0000);
+        render_rect (r, ptr->pos.x * arg.grid_size, ptr->pos.y * arg.grid_size,
+                ptr->width * arg.grid_size, ptr->height * arg.grid_size, 0x757575);//ptr->color);
+        //render_quad (r, ptr->center.x * arg.grid_size, ptr->center.y * arg.grid_size, arg.grid_size, 0xff0000);
     }
 
     //printf ("C: (%i, %i)\n", rect->center.x, rect->center.y);
-    //render_quad (r, rect->center.x * GRID, rect->center.y * GRID, GRID, 0x254117);
+    //render_quad (r, rect->center.x * arg.grid_size, rect->center.y * arg.grid_size, arg.grid_size, 0x254117);
 }
 
 void
@@ -80,24 +78,27 @@ print_koordinates (Rect *rect)
 
 int
 main (int argc, char **argv)
-{
+{   
+    // INIT
+    argp_parse (&argp, argc, argv, 0, 0, NULL);
     rng_seed (SEED);
-    Renderer *renderer = render_create (WIDTH * GRID, HEIGHT * GRID);
+    Renderer *renderer = render_create (arg.map_width * arg.grid_size, arg.map_height * arg.grid_size);
     render_fill (renderer, 0x0c090a);
 
-    Rect *head = rect_create (NULL, point (1, 1), WIDTH - 2, HEIGHT - 2);
-    bsp (&head, atoi (argv[1]), atoi (argv[2]));
-    //draw_rect (renderer, head);
+    Rect *head = rect_create (NULL, vec2 (1, 1), arg.map_width - 2, arg.map_height - 2);
+    bsp (&head, arg.iterations, 0);
+    draw_rect (renderer, head);
     draw_room (renderer, head);
 
-    print_koordinates (head);
+    if (arg.flag_debug)
+        print_koordinates (head);
     
-    render_grid (renderer, GRID, 0x757575);
+    render_grid (renderer, arg.grid_size, 0x757575);
     cairo_set_line_width (renderer->cr, 5);
-    //render_grid (renderer, 10 * GRID, 0xff0000);
+    //render_grid (renderer, 10 * arg.grid_size, 0xff0000);
 
 
-    render_save (renderer, OUTFILE);
+    render_save (renderer, arg.output_file);
     renderer = render_destroy (renderer);
     return EXIT_SUCCESS;
 }

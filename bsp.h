@@ -17,18 +17,18 @@ typedef struct
 {
     int x;
     int y;
-} Point;
+} Vec2;
 
 
 typedef struct Room
 {
-    Point pos;
+    Vec2 pos;
     int width;
     int height;
 
     int count;
 
-    Point center;
+    Vec2 center;
 
     int color;
 
@@ -36,13 +36,15 @@ typedef struct Room
 } Room;
 
 
+
 typedef struct Rect
 {
-    Point pos;
+    Vec2 pos;
     int width;
     int height;
 
-    Point center;
+    Vec2 center;
+    Vec2 split;
 
     int color;
 
@@ -54,11 +56,11 @@ typedef struct Rect
 } Rect;
 
 
-Point point (const int, const int);
+Vec2 vec2 (const int, const int);
 
-Rect *rect_create (Rect *const, const Point, const int, const int);
+Rect *rect_create (Rect *const, const Vec2, const int, const int);
 
-void bsp (Rect **, const int, const int);
+void bsp (Rect **rect, const int iteration, const int offset);
 
 
 #endif 
