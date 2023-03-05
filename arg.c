@@ -17,6 +17,10 @@ struct Arguments arg = {
     40, // map width
     30, // map height
     1, // corridor width
+    3, // numCorridors
+    1, // roomOffset
+    0, // roomSize
+    5, // minRoomSize
     "out.png" // output file
 };
 
@@ -55,6 +59,23 @@ parse_opt (int key, char *args, struct argp_state *state)
 
         case 502: // corridor width
             arg.corridor_width = atoi (args);
+            break;
+
+        case 503: // number of corridors on top level
+            arg.numCorridors = atoi (args);
+            break;
+
+        case 504: // number of rolls for room size; < 0 = Disadv.
+            arg.roomSize = atoi (args);
+            break;
+
+        case 505:
+            arg.roomOffset = atoi (args);
+            if (arg.roomOffset < 0)
+            {
+                fprintf (stderr, "roomOffset invalid < 0, using default value\n");
+                arg.roomOffset = 1;
+            }
             break;
 
         default:

@@ -10,9 +10,6 @@
 #include "rng.h"
 
 
-#define MIN_ROOM_SIZE 5
-#define MIN_RECT_SIZE MIN_ROOM_SIZE + 2
-
 
 typedef struct
 {
@@ -44,7 +41,6 @@ typedef struct Rect
     int width;
     int height;
 
-    Vec2 center;
     Vec2 split;
 
     int color;
@@ -66,7 +62,10 @@ Rect *rect_create (Rect *const, const Vec2, const int, const int);
 void bsp (Rect **rect, const int iteration, const int offset);
 
 
-
 void rect_free (Rect *rect);
+
+
+void bsp_to_map (Rect *const rect, char *map);
+
 
 #endif 

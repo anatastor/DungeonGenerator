@@ -55,10 +55,6 @@ draw_room (Renderer *r, Rect *rect)
         if (arg.flag_debug)
             render_quad (r, ptr->center.x * arg.grid_size, ptr->center.y * arg.grid_size, arg.grid_size, 0xff0000);
     }
-
-    //printf ("C: (%i, %i)\n", rect->center.x, rect->center.y);
-    if (arg.flag_debug)
-        render_quad (r, rect->center.x * arg.grid_size, rect->center.y * arg.grid_size, arg.grid_size, 0x254117);
 }
 
 void
@@ -70,12 +66,15 @@ print_koordinates (Rect *rect)
     print_koordinates (rect->childLeft);
     print_koordinates (rect->childRight);
 
-    printf ("<%i> Top-Left (%i, %i) + %i, %i = (%i, %i)\n\tMitte (%i, %i)\n",
-            rect->room->count,
-            rect->room->pos.x, rect->room->pos.y,
-            rect->room->width, rect->room->height,
-            rect->room->pos.x + rect->room->width, rect->room->pos.y + rect->room->height,
-            rect->room->center.x, rect->room->center.y);
+    for (Room *room = rect->room; room; room = room->next)
+    {
+        printf ("<%i> Top-Left (%i, %i) + %i, %i = (%i, %i)\n\tMitte (%i, %i)\n",
+                room->count,
+                room->pos.x, room->pos.y,
+                room->width, room->height,
+                room->pos.x + room->width, room->pos.y + room->height,
+                room->center.x, room->center.y);
+    }
 }
 
 
@@ -88,14 +87,21 @@ main (int argc, char **argv)
     Renderer *renderer = render_create (arg.map_width * arg.grid_size, arg.map_height * arg.grid_size);
     render_fill (renderer, 0x0c090a);
 
+    //Rect *head = rect_create (NULL, vec2 (1, 1), arg.map_width - 2, arg.map_height / 2 - 2);
     Rect *head = rect_create (NULL, vec2 (1, 1), arg.map_width - 2, arg.map_height - 2);
-    bsp (&head, arg.iterations, 0);
+    bsp (&head, arg.iterations, arg.numCorridors);
+    //Rect *head2 = rect_create (NULL, vec2 (1, arg.map_height / 2), arg.map_width - 2, arg.map_height / 2 - 2);
+    //bsp (&head2, arg.iterations, 0);
     if (arg.flag_debug)
         draw_rect (renderer, head);
     draw_room (renderer, head);
+    //draw_room (renderer, head2);
 
     if (arg.flag_debug)
+    {
         print_koordinates (head);
+        //print_koordinates (head2);
+    }
     
     render_grid (renderer, arg.grid_size, 0x757575);
     if (arg.flag_debug)

@@ -40,7 +40,7 @@ rect_create (Rect *const parent, const Vec2 pos, const int width, const int heig
     rect->width = width;
     rect->height = height;
     rect->split = vec2 (0, 0);
-    rect->center = vec2 (pos.x + width / 2, pos.y + height / 2);
+    //rect->center = vec2 (pos.x + width / 2, pos.y + height / 2);
     return rect;
 }
 
@@ -53,7 +53,7 @@ bsp_divide (Rect *const rect)
     int f1 = d / 2;
     int f2 = d - d / 2 - 1;
 
-    int offset = 2; 
+    int offset = 0; 
 
     if (rect->width >= rect->height)
         rect->split.x = rect->pos.x + rng_between (f1 * rect->width / d, f2 * rect->width / d);
@@ -250,7 +250,7 @@ bsp_corridor (Rect *const rect, const Vec2 p)
     int dx = right->center.x - left->center.x;
     int dy = right->center.y - left->center.y;
     if (arg.flag_debug)
-        printf ("dx: %i\tdy: %i\n", dx, dy);
+        printf ("\tdx: %i\tdy: %i\n", dx, dy);
 
     if (abs (dx) >= abs (dy))
     {   
@@ -259,7 +259,15 @@ bsp_corridor (Rect *const rect, const Vec2 p)
                 vec2 (x, left->center.y),
                 vec2 (x + 100 * dx, left->center.y + arg.corridor_width));
 
-        room_overlap (rect->room, right, 1, &min, &max);
+        room_overlap (*room, right, 1, &min, &max);
+        if (arg.flag_debug)
+        {
+            printf ("\t(%i, %i) -> (%i, %i)\n",
+                    (*room)->pos.x, (*room)->pos.y,
+                    (*room)->pos.x + (*room)->width,
+                    (*room)->pos.y + (*room)->height);
+            printf ("\tX: min: %i; max: %i\n", min, max);
+        }
 
         int posx = rng_between (min, max);
         room_set_from_vec2 (*room,
@@ -267,7 +275,7 @@ bsp_corridor (Rect *const rect, const Vec2 p)
                 vec2 (posx, left->center.y + arg.corridor_width));
         
         (*room)->next = room_create_from_vec2 (
-                vec2 (posx, rect->room->pos.y + (dy > 0 ? 0 : 1)),
+                vec2 (posx, (*room)->pos.y + (dy > 0 ? 0 : 1)),
                 vec2 (posx + arg.corridor_width, dy > 0 ? right->pos.y : right->pos.y + right->height));
     }
     else
@@ -277,7 +285,15 @@ bsp_corridor (Rect *const rect, const Vec2 p)
                 vec2 (left->center.x, y),
                 vec2 (left->center.x + arg.corridor_width, y + 100 * dy));
 
-        room_overlap (rect->room, right, 0, &min, &max);
+        room_overlap (*room, right, 0, &min, &max);
+        if (arg.flag_debug)
+        {
+            printf ("\t(%i, %i) -> (%i, %i)\n",
+                    (*room)->pos.x, (*room)->pos.y,
+                    (*room)->pos.x + (*room)->width,
+                    (*room)->pos.y + (*room)->height);
+            printf ("\tY: min: %i; max: %i\n", min, max);
+        }
 
         int posy = rng_between (min, max);
         room_set_from_vec2 (*room,
@@ -285,20 +301,23 @@ bsp_corridor (Rect *const rect, const Vec2 p)
                 vec2 (left->center.x + arg.corridor_width, posy));
 
         (*room)->next = room_create_from_vec2 (
-                vec2 (rect->room->pos.x + (dx > 0 ? 0 : 1), posy),
+                vec2 ((*room)->pos.x + (dx > 0 ? 0 : 1), posy),
                 vec2 (dx > 0 ? right->pos.x : right->pos.x + right->width, posy + arg.corridor_width));
-    }
+    }   
+
+    (*room)->color = 0xFFA500;
+    (*room)->next->color = 0x008000;
 }
 
 
 void
-bsp (Rect **r, const int iteration, const int offset)
+bsp (Rect **r, const int iteration, const int numCorridors)
 {    
     if (! r || ! *r)
         return;
     Rect *rect = *r;
 
-    if (rect->width < MIN_RECT_SIZE || rect->height < MIN_RECT_SIZE)
+    if (rect->width < arg.minRoomSize + 2 || rect->height < arg.minRoomSize + 2)
     {
         free (*r);
         *r = NULL;
@@ -313,61 +332,69 @@ bsp (Rect **r, const int iteration, const int offset)
         rect->childLeft->color = color;
         rect->childRight->color = color;
 
-        bsp (&(rect->childLeft), iteration - 1, offset);
-        bsp (&(rect->childRight), iteration - 1, offset);
+        bsp (&(rect->childLeft), iteration - 1, (numCorridors - 2 > 1) ? numCorridors - 2 : 1);
+        bsp (&(rect->childRight), iteration - 1, (numCorridors - 2 > 1) ? numCorridors - 2 : 1);
     }
 
     if (rect->childLeft && rect->childRight) // build corridor and exit
     {
-        if (! rect->parent)
+        // additional corridors to connect the top nodes
+        int pos = rect->split.x > 0 ? rect->split.x : rect->split.y;
+        int top = rect->split.x > 0 ? rect->pos.y : rect->pos.x;
+        int size = rect->split.x > 0 ? rect->width : rect->height;
+        Room *prevLeft = NULL;
+        Room *prevRight = NULL;
+        for (int i = 0; i < numCorridors; i++)
         {
-            // additional corridors to connect the top nodes
-            int pos = rect->split.x > 0 ? rect->split.x : rect->split.y;
-            int top = rect->split.x > 0 ? rect->pos.y : rect->pos.x;
-            int size = rect->split.x > 0 ? rect->width : rect->height;
-            int numPoints = 5;
-            for (int i = 0; i < numPoints; i++)
-            {
-                int rand = rng_between (top + i * size / numPoints, top + (i + 1) * size / numPoints);
-                printf ("%i - %i\n", top + i * size / numPoints, top + (i + 1) * size / numPoints);
+            int rand = rng_between (top + i * size / numCorridors, top + (i + 1) * size / numCorridors);
 
-                Vec2 vec;
-                if (rect->split.x)
-                    vec = vec2 (pos, rand);
-                else
-                    vec = vec2 (rand, pos);
+            Vec2 vec;
+            if (rect->split.x)
+                vec = vec2 (pos, rand);
+            else
+                vec = vec2 (rand, pos);
 
-                printf ("corridor around (%i, %i)\n", vec.x, vec.y);
+            Room *left = room_closest_to_vec2 (rect->childLeft, vec);
+            Room *right = room_closest_to_vec2 (rect->childRight, left->center);
 
-                bsp_corridor (rect, vec);
-            }
+            if (prevLeft == left && prevRight == right)
+                continue;
+
+            bsp_corridor (rect, vec);
+
+            prevLeft = left;
+            prevRight = right;
         }
-        else
-            bsp_corridor (rect, rect->center);
 
         return;
     }
     else if (! rect->childLeft && ! rect->childRight) // end node --> create new room
     {
-        rect->room = malloc (sizeof (Room));
-        rect->room->count = room_count++;
-        int w1 = rng_between (MIN_ROOM_SIZE, rect->width - 2 * offset);
-        int w2 = rng_between (MIN_ROOM_SIZE, rect->width - 2 * offset);
-        rect->room->width = (w1 > w2) ? w1 : w2;
+        int w = rng_between (arg.minRoomSize, rect->width - 2 * arg.roomOffset);
+        int h = rng_between (arg.minRoomSize, rect->height - 2 * arg.roomOffset);
+        for (int i = 0; i < abs (arg.roomSize); i++)
+        {
+            int w1 = rng_between (arg.minRoomSize, rect->width - 2 * arg.roomOffset);
+            int h1 = rng_between (arg.minRoomSize, rect->height - 2 * arg.roomOffset);
 
-        int h1 = rng_between (MIN_ROOM_SIZE, rect->height - 2 * offset);
-        int h2 = rng_between (MIN_ROOM_SIZE, rect->height - 2 * offset);
-        rect->room->height = (h1 > h2) ? h1 : h2;
+            if (arg.roomSize > 0)
+            {
+                // advantage
+                w = (w1 > w) ? w1 : w;
+                h = (h1 > h) ? h1 : h;
+            }
+            else
+            {
+                // disadvantage
+                w = (w1 < w) ? w1 : w;
+                h = (h1 < h) ? h1 : h;
+            }
+        }
 
-        rect->room->pos = vec2 (rng_between (rect->pos.x + offset, rect->width - rect->room->width - offset),
-                rng_between (rect->pos.y + offset, rect->height - rect->room->height - offset));
-
-        rect->room->center = vec2 (rect->room->pos.x + rect->room->width / 2,
-                rect->room->pos.y + rect->room->height / 2);
-        
-        rect->room->color = 0xc0c0c0;
-
-        rect->room->next = NULL;
+        rect->room = room_create (vec2 (
+                    rng_between (rect->pos.x + arg.roomOffset, rect->width - w - arg.roomOffset),
+                    rng_between (rect->pos.y + arg.roomOffset, rect->height - h - arg.roomOffset)),
+                w, h);
     }   
     else if (iteration && rect->parent) // only one node missing --> update parent
     {
@@ -411,3 +438,38 @@ rect_free (Rect *rect)
 
     free (rect);
 }
+
+
+void
+room_to_map (Room *room)
+{
+    return;
+}
+
+
+void
+bsp_to_map (Rect *const rect, char *map)
+{
+    if (! rect)
+        return;
+
+    static int width;
+    static int height;
+    if (! rect->parent)
+    {
+        width = rect->width;
+        height = rect->height;
+    }
+
+    bsp_to_map (rect->childLeft, map);
+    bsp_to_map (rect->childRight, map);
+
+    for (Room *room = rect->room; room; room = room->next)
+    {
+        room_to_map (room);
+    }
+}
+
+
+
+
