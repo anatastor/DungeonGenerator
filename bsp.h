@@ -59,7 +59,9 @@ enum Stuff
     e_empty = 0,
     e_room,
     e_stair_up,
-    e_stair_down
+    e_stair_down,
+    e_stair_up_2 = 'U',
+    e_stair_down_2 = 'D'
 };
 
 

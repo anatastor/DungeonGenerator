@@ -33,6 +33,7 @@ draw_rect (Renderer *r, Rect *rect)
     draw_rect (r, rect->childRight);
 }
 
+
 void
 draw_room (Renderer *r, Rect *rect)
 {   
@@ -51,6 +52,7 @@ draw_room (Renderer *r, Rect *rect)
             render_quad (r, ptr->center.x * arg.grid_size, ptr->center.y * arg.grid_size, arg.grid_size, 0xff0000);
     }
 }
+
 
 void
 print_koordinates (Rect *rect)
@@ -74,34 +76,102 @@ print_koordinates (Rect *rect)
 
 
 void
-map_free (char **map, const int width)
-{   
-    for (int i = 0; i < width; i++)
-        free (map[i]);
-    free (map);
+fprint_map (FILE *const fp, const char *const map)
+{
+    static const char clist[] = " +^!";
+    for (int i = 0; i < arg.mapWidth * arg.mapHeight; i++)
+    {
+        if (i / arg.mapWidth == 0 ||
+            i / arg.mapWidth == arg.mapHeight - 1 ||
+            i % arg.mapWidth == 0 ||
+            i % arg.mapWidth == arg.mapWidth - 1)
+            fprintf (fp, "#");
+        else
+            fprintf (fp, "%c", clist[(int) map[i]]);
+
+        if (i % arg.mapWidth == arg.mapWidth - 1)
+            fprintf (fp, "\n");
+    }
 }
 
 
 char
-checkPixels (char **map, const int x, const int y)
+map_check_neighbors_row (const char *const map, const int index)
 {
     char sum = 0;
-    for (int i = x - 1; i < x + 2; i++)
-        for (int j = y - 1; j < y + 2; j++)
-            sum += map[i][j];
-    return sum == 9 ? 1 : 0;
+    for (int i = index - 1; i < index + 2; i++)
+        sum += map[i];
+    return sum;
+}
+    
+
+char
+map_check_neighbors (char *map, int index)
+{
+    if (index / arg.mapWidth == 0) return 0; // ignore y = 0
+    if (index / arg.mapWidth == arg.mapHeight - 1) return 0; // ignore y = mapHeight
+    if (index % arg.mapWidth == 0) return 0; // ignore x = 0
+    if (index % arg.mapWidth == arg.mapWidth - 1) return 0; // ignore x = mapWidth
+
+    char sum = map_check_neighbors_row (map, index);
+    sum += map_check_neighbors_row (map, index - arg.mapWidth);
+    sum += map_check_neighbors_row (map, index + arg.mapWidth);
+
+    return sum;
 }
 
 
-void
-fprint_map (FILE *const fp, const char *const map)
+int
+map_erosion (char **map)
 {
+    int count = 0;
+    char *tmp = malloc (sizeof (char) * arg.mapWidth * arg.mapHeight);
     for (int i = 0; i < arg.mapWidth * arg.mapHeight; i++)
     {
-        fprintf (fp, "%c", map[i] == e_room ? 'X' : ' ');
-        if (i % arg.mapWidth == arg.mapWidth - 1)
-            fprintf (fp, "\n");
+        char res = (map_check_neighbors (*map, i) == 9) ? 1 : 0;
+        count += res;
+        tmp[i] = res;
     }
+
+    free (*map);
+    *map = tmp;
+
+    return count;
+}
+
+
+int
+map_dilatation (char **map)
+{   
+    int count = 0;
+    char *tmp = malloc (sizeof (char) * arg.mapWidth * arg.mapHeight);
+    for (int i = 0; i < arg.mapWidth * arg.mapHeight; i++)
+    {
+        char res = (map_check_neighbors (*map, i) > 0) ? 1 : 0;
+        count += res;
+        tmp[i] = res;
+    }
+
+    free (*map);
+    *map = tmp;
+
+    return count;
+}
+
+
+char *
+map_compare (const char *const map1, const char *const map2)
+{   
+    /*
+     * creates a new map layer containing True or False if both given maps share a room
+     * on the same index
+     */
+    char *ret = malloc (sizeof (char) * arg.mapWidth * arg.mapHeight);
+
+    for (int i = 0; i < arg.mapWidth * arg.mapHeight; i++)
+        ret[i] = (map1[i] == e_room && map2[i] == e_room) ? 1 : 0;
+
+    return ret;
 }
 
 
@@ -124,19 +194,39 @@ main (int argc, char **argv)
 
     if (arg.flag_debug)
         draw_rect (renderer, head);
-    draw_room (renderer, head);
 
+    draw_room (renderer, head);
     //draw_room (renderer, head2);
     
     char *map = map_from_bsp (head, NULL);
     char *map2 = map_from_bsp (head2, NULL);
-    char *map_f = malloc (sizeof (char) * arg.mapWidth * arg.mapHeight);
 
-    // Karten vergleichen
-    for (int i = 0; i < arg.mapWidth * arg.mapHeight; i++)
-        map_f[i] = map[i] & map2[i];
+    char *map_b = map_compare (map, map2); // new array containing 1 on each position both maps have rooms
 
+    map_erosion (&map_b);
+    int countValid = map_dilatation (&map_b);
+
+    int stairCount = 5;
+    int prevStairPos = 0;
+    for (int i = 0; i < stairCount; i++)
+    {
+        int rand = rng_between (i * countValid / stairCount, (i + 1) * countValid / stairCount - 1);
+        int pos;
+        for (int count = 0, pos = 0; pos < arg.mapWidth * arg.mapHeight; pos++)
+            if ((count += map_b[pos]) == rand) break;
+
+        if (prevStairPos && pos - prevStairPos >= arg.mapWidth / 2)
+        {
+            map[pos] = e_stair_down;
+            map2[pos] = e_stair_up;
+            prevStairPos = pos;
+        }
+    }
+
+
+    fprint_map (stdout, map_b);
     fprint_map (stdout, map);
+    fprint_map (stdout, map2);
 
     if (arg.flag_debug)
     {
@@ -155,6 +245,9 @@ main (int argc, char **argv)
     render_save (renderer, arg.output_file);
     
     /*** FREE & DESTROY ***/
+    free (map);
+    free (map2);
+    free (map_b);
     rect_free (head);
     head = NULL;
 
