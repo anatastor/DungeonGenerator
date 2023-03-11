@@ -16,9 +16,9 @@ struct Arguments
     int seed;
     int iterations;
     int grid_size;
-    int map_width;
-    int map_height;
-    char corridor_width;
+    int mapWidth;
+    int mapHeight;
+    char corridorWidth;
     int numCorridors;
     int roomOffset;
     int roomSize;
@@ -35,9 +35,9 @@ static struct argp_option options[] = {
     {"color", 'C', 0, 0, "Draw rooms and corridors in diffrent colors"},
     {"seed", 's', "seed", 0, "Seed for the generation"},
     {"iterations", 'i', "iterations", 0, "Number of subdivisions (default: 7)"},
-    {"map-size", 500, "WIDTHxHEIGHT", 0, "Map size in WIDTHxHEIGHT squares (default: 40x30)"},
-    {"grid-size", 501, "pixels", 0, "Size of one square in pixels (default: 25)"},
-    {"corridor-width", 502, "width", 0, "Width of the corridors in Squares"},
+    {"mapSize", 500, "WIDTHxHEIGHT", 0, "Map size in WIDTHxHEIGHT squares (default: 40x30)"},
+    {"gridSize", 501, "pixels", 0, "Size of one square in pixels (default: 25)"},
+    {"corridorWidth", 502, "width", 0, "Width of the corridors in Squares"},
     {"number-of-corridors", 503, "number", 0,
         "Number of corridors for the top level, decreases by 1 each level to a minimu of 1"},
     {"roomSize", 504, "size", 0, "Number of Rolls for the Room size "

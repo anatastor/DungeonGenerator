@@ -40,7 +40,6 @@ rect_create (Rect *const parent, const Vec2 pos, const int width, const int heig
     rect->width = width;
     rect->height = height;
     rect->split = vec2 (0, 0);
-    //rect->center = vec2 (pos.x + width / 2, pos.y + height / 2);
     return rect;
 }
 
@@ -149,7 +148,7 @@ room_set (Room *const room, const Vec2 pos, const int width, const int height)
 
     room->next = NULL;
 
-    room->color = 0x8b4513;
+    room->color = 0x757575;
 }
 
 
@@ -224,11 +223,12 @@ bsp_corridor (Rect *const rect, const Vec2 p)
         int dx = right->pos.x - left->pos.x - left->width;
         if (max > min + 1)
             *room = room_create (vec2 (left->pos.x + left->width, min + (max - min) / 2),
-                    dx, arg.corridor_width);
+                    dx, arg.corridorWidth);
         else
             *room = room_create (vec2 (left->pos.x + left->width, min),
-                    dx, arg.corridor_width);
+                    dx, arg.corridorWidth);
 
+        (*room)->color = 0xFFA500;
         return;
     }
     else if (room_overlap (left, right, 1, &min, &max))
@@ -237,11 +237,12 @@ bsp_corridor (Rect *const rect, const Vec2 p)
         int dy = right->pos.y - left->pos.y - left->height;
         if (max > min + 1)
             *room = room_create (vec2 (min + (max - min) / 2, left->pos.y + left->height),
-                    arg.corridor_width, dy);
+                    arg.corridorWidth, dy);
         else
             *room = room_create (vec2 (min, left->pos.y + left->height),
-                    arg.corridor_width, dy);
+                    arg.corridorWidth, dy);
 
+        (*room)->color = 0xFFA500;
         return;
     }
 
@@ -257,7 +258,7 @@ bsp_corridor (Rect *const rect, const Vec2 p)
         int x = (dx > 0) ? left->pos.x + left->width : left->pos.x;
         *room = room_create_from_vec2 (
                 vec2 (x, left->center.y),
-                vec2 (x + 100 * dx, left->center.y + arg.corridor_width));
+                vec2 (x + 100 * dx, left->center.y + arg.corridorWidth));
 
         room_overlap (*room, right, 1, &min, &max);
         if (arg.flag_debug)
@@ -272,18 +273,18 @@ bsp_corridor (Rect *const rect, const Vec2 p)
         int posx = rng_between (min, max);
         room_set_from_vec2 (*room,
                 vec2 (x, left->center.y),
-                vec2 (posx, left->center.y + arg.corridor_width));
+                vec2 (posx + arg.corridorWidth, left->center.y + arg.corridorWidth));
         
         (*room)->next = room_create_from_vec2 (
                 vec2 (posx, (*room)->pos.y + (dy > 0 ? 0 : 1)),
-                vec2 (posx + arg.corridor_width, dy > 0 ? right->pos.y : right->pos.y + right->height));
+                vec2 (posx + arg.corridorWidth, dy > 0 ? right->pos.y : right->pos.y + right->height));
     }
     else
     {   
         int y = (dy > 0) ? left->pos.y + left->height : left->pos.y;
         *room = room_create_from_vec2 (
                 vec2 (left->center.x, y),
-                vec2 (left->center.x + arg.corridor_width, y + 100 * dy));
+                vec2 (left->center.x + arg.corridorWidth, y + 100 * dy));
 
         room_overlap (*room, right, 0, &min, &max);
         if (arg.flag_debug)
@@ -298,11 +299,11 @@ bsp_corridor (Rect *const rect, const Vec2 p)
         int posy = rng_between (min, max);
         room_set_from_vec2 (*room,
                 vec2 (left->center.x, y),
-                vec2 (left->center.x + arg.corridor_width, posy));
+                vec2 (left->center.x + arg.corridorWidth, posy + arg.corridorWidth));
 
         (*room)->next = room_create_from_vec2 (
                 vec2 ((*room)->pos.x + (dx > 0 ? 0 : 1), posy),
-                vec2 (dx > 0 ? right->pos.x : right->pos.x + right->width, posy + arg.corridor_width));
+                vec2 (dx > 0 ? right->pos.x : right->pos.x + right->width, posy + arg.corridorWidth));
     }   
 
     (*room)->color = 0xFFA500;
@@ -338,7 +339,6 @@ bsp (Rect **r, const int iteration, const int numCorridors)
 
     if (rect->childLeft && rect->childRight) // build corridor and exit
     {
-        // additional corridors to connect the top nodes
         int pos = rect->split.x > 0 ? rect->split.x : rect->split.y;
         int top = rect->split.x > 0 ? rect->pos.y : rect->pos.x;
         int size = rect->split.x > 0 ? rect->width : rect->height;
@@ -441,33 +441,36 @@ rect_free (Rect *rect)
 
 
 void
-room_to_map (Room *room)
+room_to_map (Room *room, char **map)
 {
-    return;
+    for (int x = room->pos.x; x < room->pos.x + room->width; x++)
+        for (int y = room->pos.y; y < room->pos.y + room->height; y++)
+            map[x][y] = 1;
 }
 
 
-void
-bsp_to_map (Rect *const rect, char *map)
+char **
+map_from_bsp (Rect *const rect, char **map)
 {
     if (! rect)
-        return;
+        return NULL;
 
-    static int width;
-    static int height;
-    if (! rect->parent)
+    char **_map = map;
+    
+    if (! _map)
     {
-        width = rect->width;
-        height = rect->height;
+        _map = calloc (arg.mapWidth, sizeof (char *));
+        for (int i = 0; i < arg.mapWidth; i++)
+            _map[i] = calloc (arg.mapHeight, sizeof (char));
     }
 
-    bsp_to_map (rect->childLeft, map);
-    bsp_to_map (rect->childRight, map);
+    map_from_bsp (rect->childLeft, _map);
+    map_from_bsp (rect->childRight, _map);
 
     for (Room *room = rect->room; room; room = room->next)
-    {
-        room_to_map (room);
-    }
+        room_to_map (room, _map);
+
+    return _map;
 }
 
 

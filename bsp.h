@@ -65,7 +65,7 @@ void bsp (Rect **rect, const int iteration, const int offset);
 void rect_free (Rect *rect);
 
 
-void bsp_to_map (Rect *const rect, char *map);
 
+char **map_from_bsp (Rect *const rect, char **map);
 
 #endif 

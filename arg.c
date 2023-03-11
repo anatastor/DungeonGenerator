@@ -14,8 +14,8 @@ struct Arguments arg = {
     0x0815, // seed
     5, // iterations
     25, // grid size
-    40, // map width
-    30, // map height
+    40, // mapWidth
+    30, // mapHeight
     1, // corridor width
     3, // numCorridors
     1, // roomOffset
@@ -50,7 +50,7 @@ parse_opt (int key, char *args, struct argp_state *state)
             break;
 
         case 500: // map size
-            sscanf (args, "%ix%i", &arg.map_width, &arg.map_height);
+            sscanf (args, "%ix%i", &arg.mapWidth, &arg.mapHeight);
             break;
 
         case 501: // grid_size
@@ -58,7 +58,7 @@ parse_opt (int key, char *args, struct argp_state *state)
             break;
 
         case 502: // corridor width
-            arg.corridor_width = atoi (args);
+            arg.corridorWidth = atoi (args);
             break;
 
         case 503: // number of corridors on top level
