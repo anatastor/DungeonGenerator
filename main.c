@@ -8,11 +8,6 @@
 #include "bsp.h"
 
 
-#define OUTFILE "out.png"
-
-#define SEED    0x12351
-
-
 void
 draw_rect (Renderer *r, Rect *rect)
 {   
@@ -79,23 +74,6 @@ print_koordinates (Rect *rect)
 
 
 void
-map_print (FILE *fp, char **map, const int width, const int height)
-{
-    for (int y = 0; y < height; y++)
-    {
-        for (int x = 0; x < width; x++)
-        {
-            if (x == 0 || y == 0 || x == width - 1 || y == height - 1)
-                fprintf (fp, "#");
-            else
-                fprintf (fp, "%c", map[x][y] ? 'X' : ' ');
-        }
-        fprintf (fp, "\n");
-    }
-}
-
-
-void
 map_free (char **map, const int width)
 {   
     for (int i = 0; i < width; i++)
@@ -112,6 +90,18 @@ checkPixels (char **map, const int x, const int y)
         for (int j = y - 1; j < y + 2; j++)
             sum += map[i][j];
     return sum == 9 ? 1 : 0;
+}
+
+
+void
+fprint_map (FILE *const fp, const char *const map)
+{
+    for (int i = 0; i < arg.mapWidth * arg.mapHeight; i++)
+    {
+        fprintf (fp, "%c", map[i] == e_room ? 'X' : ' ');
+        if (i % arg.mapWidth == arg.mapWidth - 1)
+            fprintf (fp, "\n");
+    }
 }
 
 
@@ -135,54 +125,18 @@ main (int argc, char **argv)
     if (arg.flag_debug)
         draw_rect (renderer, head);
     draw_room (renderer, head);
+
     //draw_room (renderer, head2);
     
-    char **map1 = map_from_bsp (head, NULL);
-    char **map2 = map_from_bsp (head2, NULL);
+    char *map = map_from_bsp (head, NULL);
+    char *map2 = map_from_bsp (head2, NULL);
+    char *map_f = malloc (sizeof (char) * arg.mapWidth * arg.mapHeight);
 
-    char **map3 = calloc (arg.mapWidth, sizeof (char *));
-    for (int i = 0; i < arg.mapWidth; i++)
-        map3[i] = calloc (arg.mapHeight, sizeof (char));
+    // Karten vergleichen
+    for (int i = 0; i < arg.mapWidth * arg.mapHeight; i++)
+        map_f[i] = map[i] & map2[i];
 
-    char **map4 = calloc (arg.mapWidth, sizeof (char *));
-    for (int i = 0; i < arg.mapWidth; i++)
-        map4[i] = calloc (arg.mapHeight, sizeof (char));
-
-    for (int x = 0; x < arg.mapWidth; x++)
-        for (int y = 0; y < arg.mapHeight; y++)
-        {
-            map3[x][y] = map1[x][y] & map2[x][y];
-            map4[x][y] = ! (map1[x][y] | map2[x][y]);
-        }
-
-    char **map5 = calloc (arg.mapWidth, sizeof (char *));
-    for (int i = 0; i < arg.mapWidth; i++)
-        map5[i] = calloc (arg.mapHeight, sizeof (char));
-
-    for (int x = 1; x < arg.mapWidth - 1; x++)
-        for (int y = 1; y < arg.mapHeight - 1; y++)
-        {
-            map5[x][y] = checkPixels (map3, x, y);
-        }
-
-
-    FILE *fp = fopen ("out.txt", "w");
-    fprintf (fp, "Map 1\n");
-    map_print (fp, map1, arg.mapWidth, arg.mapHeight);
-
-    fprintf (fp, "\nMap 2\n");
-    map_print (fp, map2, arg.mapWidth, arg.mapHeight);
-
-    fprintf (fp, "\nMap 3 = Map 1 & Map 2 (Überschneidung beider Ebenen)\n");
-    map_print (fp, map3, arg.mapWidth, arg.mapHeight);
-
-    fprintf (fp, "\nMap 4 = Map 1 | Map 2 (freier Raum zw. beiden Ebenen)\n");
-    map_print (fp, map4, arg.mapWidth, arg.mapHeight);
-
-    fprintf (fp, "\nMap 5 (erosion of map 3)\n");
-    map_print (fp, map5, arg.mapWidth, arg.mapHeight);
-
-    fclose (fp);
+    fprint_map (stdout, map);
 
     if (arg.flag_debug)
     {
@@ -203,10 +157,6 @@ main (int argc, char **argv)
     /*** FREE & DESTROY ***/
     rect_free (head);
     head = NULL;
-
-    map_free (map1, arg.mapWidth);
-    map_free (map2, arg.mapWidth);
-    map_free (map3, arg.mapWidth);
 
     renderer = render_destroy (renderer);
     return EXIT_SUCCESS;

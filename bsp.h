@@ -53,6 +53,16 @@ typedef struct Rect
 } Rect;
 
 
+
+enum Stuff
+{
+    e_empty = 0,
+    e_room,
+    e_stair_up,
+    e_stair_down
+};
+
+
 Vec2 vec2 (const int, const int);
 
 
@@ -66,6 +76,6 @@ void rect_free (Rect *rect);
 
 
 
-char **map_from_bsp (Rect *const rect, char **map);
+char *map_from_bsp (Rect *const rect, char *const map);
 
 #endif 

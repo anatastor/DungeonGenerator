@@ -441,28 +441,26 @@ rect_free (Rect *rect)
 
 
 void
-room_to_map (Room *room, char **map)
+room_to_map (const Room *const room, char *map)
 {
+    if (! room)
+        return;
+
     for (int x = room->pos.x; x < room->pos.x + room->width; x++)
         for (int y = room->pos.y; y < room->pos.y + room->height; y++)
-            map[x][y] = 1;
+            map[y * arg.mapWidth + x] = e_room;
 }
 
 
-char **
-map_from_bsp (Rect *const rect, char **map)
+char *
+map_from_bsp (Rect *const rect, char *map)
 {
     if (! rect)
         return NULL;
 
-    char **_map = map;
-    
+    char *_map = map;
     if (! _map)
-    {
-        _map = calloc (arg.mapWidth, sizeof (char *));
-        for (int i = 0; i < arg.mapWidth; i++)
-            _map[i] = calloc (arg.mapHeight, sizeof (char));
-    }
+        _map = calloc (arg.mapWidth * arg.mapHeight, sizeof (char));
 
     map_from_bsp (rect->childLeft, _map);
     map_from_bsp (rect->childRight, _map);
