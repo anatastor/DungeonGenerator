@@ -147,7 +147,7 @@ map_dilatation (char **map)
     char *tmp = malloc (sizeof (char) * arg.mapWidth * arg.mapHeight);
     for (int i = 0; i < arg.mapWidth * arg.mapHeight; i++)
     {
-        char res = (map_check_neighbors (*map, i) > 0) ? 1 : 0;
+        char res = (map_check_neighbors (*map, i) > 5) ? 1 : 0;
         count += res;
         tmp[i] = res;
     }
@@ -211,18 +211,26 @@ main (int argc, char **argv)
     for (int i = 0; i < stairCount; i++)
     {
         int rand = rng_between (i * countValid / stairCount, (i + 1) * countValid / stairCount - 1);
-        int pos;
-        for (int count = 0, pos = 0; pos < arg.mapWidth * arg.mapHeight; pos++)
-            if ((count += map_b[pos]) == rand) break;
+        int pos = 0;
+        for (int count = 0; pos < arg.mapWidth * arg.mapHeight; pos++)
+        {
+            count += map_b[pos];
+            if (count == rand) break;
+        }
 
-        if (prevStairPos && pos - prevStairPos >= arg.mapWidth / 2)
+        if (! prevStairPos)
+        {
+            prevStairPos = pos;
+            map[pos] = e_stair_down;
+            map2[pos] = e_stair_up;
+        }
+        else if (prevStairPos && pos - prevStairPos >= arg.mapWidth / 2)
         {
             map[pos] = e_stair_down;
             map2[pos] = e_stair_up;
             prevStairPos = pos;
         }
     }
-
 
     fprint_map (stdout, map_b);
     fprint_map (stdout, map);
