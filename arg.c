@@ -54,7 +54,7 @@ parse_opt (int key, char *args, struct argp_state *state)
             break;
 
         case 501: // grid_size
-            arg.grid_size = atoi (args);
+            arg.gridSize = atoi (args);
             break;
 
         case 502: // corridor width

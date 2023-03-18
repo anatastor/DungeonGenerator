@@ -15,7 +15,7 @@ struct Arguments
     char flag_color;
     int seed;
     int iterations;
-    int grid_size;
+    int gridSize;
     int mapWidth;
     int mapHeight;
     char corridorWidth;

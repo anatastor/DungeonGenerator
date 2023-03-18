@@ -28,15 +28,18 @@ void render_render (Renderer *);
 
 void render_fill (Renderer *, const int);
 void render_line (Renderer *, const int, const int, const int, const int, const int, const int);
-void render_rect (Renderer *r, const int, const int, const int, const int, const int);
-void render_quad (Renderer *r, const int, const int, const int, const int);
+void render_rect (Renderer *, const int, const int, const int, const int, const int);
+void render_quad (Renderer *, const int x, const int y, const int size, const int color);
 
-void render_grid (Renderer *r, const int, const int);
-
-
+void render_grid (Renderer *, const int size, const int color);
 
 
-void render_save (Renderer *, const char *);
+void render_map (Renderer *, const char *const map, const int width, const int height, const int size);
+
+
+
+
+void render_save (Renderer *, const char *const path);
 
 
 

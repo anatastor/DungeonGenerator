@@ -81,16 +81,16 @@ render_rect (Renderer *r, const int x, const int y, const int w, const int h, co
 }
 
 void
-render_quad (Renderer *r, const int x, const int y, const int s, const int hex)
+render_quad (Renderer *r, const int x, const int y, const int size, const int color)
 {
-    render_rect (r, x, y, s, s, hex);
+    render_rect (r, x, y, size, size, color);
 }
 
 
 void
-render_grid (Renderer *r, const int size, const int hex)
+render_grid (Renderer *r, const int size, const int color)
 {
-    render_setColor (r, hex);
+    render_setColor (r, color);
     for (int x = 0; x < r->width / size; x++)
         _render_line (r, x * size, 0, x * size, r->height);
 
@@ -102,7 +102,30 @@ render_grid (Renderer *r, const int size, const int hex)
 
 
 void
-render_save (Renderer *r, const char *path)
+render_map (Renderer *r, const char *const map, const int width, const int height, const int size)
+{
+    static const int colors[] = {
+        0x0c090a,
+        0x757575,
+        0x008000,
+        0x800000
+    };
+    render_fill (r, 0x0c090a);
+    for (int i = 0; i < width * height; i++)
+        /*
+        if (i / width == 0 ||
+            i / width == height - 1 ||
+            i % width == 0 ||
+            i % width == height - 1)
+            render_quad (r, i % width * size, i / height * size, size, 0x0c090A);
+        else
+        */
+        render_quad (r, i % width * size, i / width * size, size, colors[map[i]]);
+}
+
+
+void
+render_save (Renderer *r, const char *const path)
 {
     cairo_surface_write_to_png (r->surface, path);
 }
