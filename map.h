@@ -23,7 +23,7 @@ enum DilatationErosion {
 };
 
 
-void map_from_bsp (Rect *const rect, char *const map, const int width);
+void map_generate (char *const map, Vec2 pos, const int width, const int height, const int mwidth, const int mheight);
 
 void map_create_walls (char *const map, const int width, const int height);
 

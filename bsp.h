@@ -34,6 +34,8 @@ typedef struct Room
     int width;
     int height;
 
+    int num;
+
     Vec2 center;
 
     struct Room *next;

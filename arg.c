@@ -24,7 +24,8 @@ struct Arguments arg = {
     NULL, // outfile
     1, // numLevels
     0, // dungeonDesign
-    0.0 // dungeonDecay
+    0.0, // dungeonDecay
+    0 // rectOffset
 };
 
 error_t
@@ -91,6 +92,14 @@ parse_opt (int key, char *args, struct argp_state *state)
 
         case 507:
             sscanf (args, "%f", &arg.dungeonDecay);
+            break;
+
+        case 508:
+            arg.rectOffset = atoi (args);
+            break;
+
+        case 509:
+            arg.minRoomSize = atoi (args);
             break;
 
         default:

@@ -13,6 +13,19 @@ p_map_generate_room (Room *const room, char *const map, const int width)
 }
 
 
+void
+p_map_from_bsp (Rect *const rect, char *const map, const int width)
+{       
+    if (! rect) return;
+
+    p_map_from_bsp (rect->childLeft, map, width);
+    p_map_from_bsp (rect->childRight, map, width);
+
+    for (Room *room = rect->room; room; room = room->next)
+        p_map_generate_room (room, map, width);
+}
+
+
 
 char
 p_map_check_neighbors_row (const char *const map, const int index)
@@ -67,15 +80,20 @@ p_map_dilatation (char *map, const int width, const int height)
 // ----- public functions -----
 
 void
-map_from_bsp (Rect *const rect, char *const map, const int width)
-{       
-    if (! rect) return;
+map_generate (char *const map, Vec2 pos, const int width, const int height, const int mwidth, const int mheight)
+{
+    Rect *head = rect_create (NULL, vec2 (pos.x + 1, pos.y + 1), width - 2, height - 2);
 
-    map_from_bsp (rect->childLeft, map, width);
-    map_from_bsp (rect->childRight, map, width);
+    int numCorridors = arg.numCorridors;
+    if (! numCorridors)
+        numCorridors = (width > height) ? height / 20 : width / 20;
 
-    for (Room *room = rect->room; room; room = room->next)
-        p_map_generate_room (room, map, width);
+    bsp (&head, arg.iterations, numCorridors);
+
+    p_map_from_bsp (head, map, mwidth);
+    map_create_walls (map, mwidth, mheight);
+
+    Rect_free (head);
 }
 
 
@@ -162,8 +180,8 @@ map_decay_step (char *const map, const int width, const int height, const int po
     if (pos % width == 0) return; // ignore x = 0
     if (pos % width == width - 1) return; // ignore x = mapWidth
     
-    //if (map[pos] == TileType_Wall || map[pos] == TileType_None)
-    if (map[pos] < 3)
+    if (map[pos] == TileType_Wall || map[pos] == TileType_None)
+    //if (map[pos] < 3)
         map[pos] = TileType_Decay;
     
     for (int i = 0; i < rng () % 13; i++) ;

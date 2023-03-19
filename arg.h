@@ -27,6 +27,7 @@ struct Arguments
     int numLevels;
     int dungeonDesign;
     float dungeonDecay;
+    int rectOffset;
 };
 
 
@@ -47,9 +48,11 @@ static struct argp_option options[] = {
         "size > 0 leads to greater rooms while size < 0 leads to overall smaller rooms (default: 0)"},
     {"roomOffset", 505, "offset", 0, "offset to the edges of the rectangle (default: 1)"},
     {"output", 'o', "FILE", 0, "Output to FILE (default: 'out.png')"},
-    {"numLevels", 'l', "NUMLEVELS", 0, "number of levels to generate"},
+    {"numLevels", 'l', "NUMLEVELS", 0, "number of levels to generate (default: 1)"},
     {"design", 506, "Design", 0, "Design Preset"},
-    {"decay", 507, "Decay", 0, "Decay of the Map"},
+    {"decay", 507, "Decay", 0, "Decay of the Map (default: 0.0)"},
+    {"rectOffset", 508, "RectOffset", 0, "Offset of Rectangles (default: 0)"},
+    {"minRoomSize", 509, "size", 0, "minimal size of a room (default: 5)"},
     {0}
 };
 
