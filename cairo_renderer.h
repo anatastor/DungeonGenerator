@@ -8,6 +8,8 @@
 
 #include <cairo.h>
 
+#include "dungeon.h"
+
 
 typedef struct
 {
@@ -34,12 +36,11 @@ void render_quad (Renderer *, const int x, const int y, const int size, const in
 void render_grid (Renderer *, const int size, const int color);
 
 
-void render_map (Renderer *, const char *const map, const int width, const int height, const int size);
-
-
-
 
 void render_save (Renderer *, const char *const path);
+
+
+void render_map (Renderer *renderer, const char *const map, const int width, const int height, const int gridSize);
 
 
 

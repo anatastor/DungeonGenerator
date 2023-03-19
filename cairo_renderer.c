@@ -102,32 +102,23 @@ render_grid (Renderer *r, const int size, const int color)
 
 
 void
-render_map (Renderer *r, const char *const map, const int width, const int height, const int size)
-{
-    static const int colors[] = {
-        0x0c090a,
-        0x757575,
-        0x008000,
-        0x800000
-    };
-    render_fill (r, 0x0c090a);
-    for (int i = 0; i < width * height; i++)
-        /*
-        if (i / width == 0 ||
-            i / width == height - 1 ||
-            i % width == 0 ||
-            i % width == height - 1)
-            render_quad (r, i % width * size, i / height * size, size, 0x0c090A);
-        else
-        */
-        render_quad (r, i % width * size, i / width * size, size, colors[map[i]]);
-}
-
-
-void
 render_save (Renderer *r, const char *const path)
 {
     cairo_surface_write_to_png (r->surface, path);
 }
 
 
+void
+render_map (Renderer *r, const char *const map, const int width, const int height, const int gridSize)
+{
+    static const int colors[] = {
+        0x0c090a, // None
+        0x757575, // Floor
+        0x7FFFD4, // Wall
+        0x008000, // Stair Up
+        0x800000 // Stair Down
+    };
+
+    for (int i = 0; i < width * height; i++)
+        render_quad (r, i % width * gridSize, i / width * gridSize, gridSize, colors[map[i]]);
+}

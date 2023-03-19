@@ -4,12 +4,22 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <stdarg.h>
 #include <math.h>
 
 #include "arg.h"
 #include "rng.h"
 
 
+struct BspOptions
+{
+    int iterations;
+    int corridorWidth;
+    int roomSize;
+    int minRoomSize;
+    int roomOffset;
+};
 
 typedef struct
 {
@@ -24,11 +34,7 @@ typedef struct Room
     int width;
     int height;
 
-    int count;
-
     Vec2 center;
-
-    int color;
 
     struct Room *next;
 } Room;
@@ -42,8 +48,6 @@ typedef struct Rect
     int height;
 
     Vec2 split;
-
-    int color;
 
     Room *room;
 
@@ -60,9 +64,11 @@ enum Stuff
     e_room,
     e_stair_up,
     e_stair_down,
-    e_stair_up_2 = 'U',
-    e_stair_down_2 = 'D'
+    e_wall
 };
+
+
+void bsp_set_option (char *const name, int value);
 
 
 Vec2 vec2 (const int, const int);
@@ -74,10 +80,7 @@ Rect *rect_create (Rect *const, const Vec2, const int, const int);
 void bsp (Rect **rect, const int iteration, const int offset);
 
 
-void rect_free (Rect *rect);
+void Rect_free (Rect *rect);
 
-
-
-char *map_from_bsp (Rect *const rect, char *const map);
 
 #endif 

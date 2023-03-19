@@ -23,7 +23,8 @@ struct Arguments
     int roomOffset;
     int roomSize;
     int minRoomSize;
-    char *output_file;
+    char *outfile;
+    int numLevels;
 };
 
 
@@ -44,6 +45,7 @@ static struct argp_option options[] = {
         "size > 0 leads to greater rooms while size < 0 leads to overall smaller rooms (default: 0)"},
     {"roomOffset", 505, "offset", 0, "offset to the edges of the rectangle (default: 1)"},
     {"output", 'o', "FILE", 0, "Output to FILE (default: 'out.png')"},
+    {"numLevels", 'l', "NUMLEVELS", 0, "number of levels to generate"},
     {0}
 };
 

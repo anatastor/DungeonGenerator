@@ -17,11 +17,12 @@ struct Arguments arg = {
     40, // mapWidth
     30, // mapHeight
     1, // corridor width
-    3, // numCorridors
+    0, // numCorridors
     1, // roomOffset
     0, // roomSize
     5, // minRoomSize
-    "out.png" // output file
+    NULL, // outfile
+    1 // numLevels
 };
 
 error_t
@@ -46,7 +47,11 @@ parse_opt (int key, char *args, struct argp_state *state)
             break;
 
         case 'o': // output file
-            arg.output_file = args;
+            arg.outfile = args;
+            break;
+
+        case 'l': // numLevels
+            arg.numLevels = atoi (args);
             break;
 
         case 500: // map size

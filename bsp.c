@@ -2,7 +2,59 @@
 #include "bsp.h"
 
 
-int room_count = 0;
+
+struct BspOptions bspOptions = {
+    3, // iterations
+    1, // corridorWidt
+    3, // roomSize
+    5, // minRoomSize
+    1, // roomOffset
+};
+
+
+
+void
+bsp_set_option (char *const name, int value)
+{
+    static const char *bspOptionList[] = {
+        "iterations",
+        "corridorWidth",
+        "roomSize",
+        "minRoomSize",
+        "roomOffset"
+    };
+    
+    int i;
+    for (i = 0; i < 5; i++)
+        if (*name == *bspOptionList[i] && strcmp (name, bspOptionList[i])) break;
+
+    switch (i)
+    {
+        case 0:
+            bspOptions.iterations = value; 
+            break;
+
+        case 1:
+            bspOptions.corridorWidth = value; 
+            break;
+
+        case 2:
+            bspOptions.roomSize = value; 
+            break;
+
+        case 3:
+            bspOptions.minRoomSize = value; 
+            break;
+
+        case 4:
+            bspOptions.roomOffset = value; 
+            break;
+
+        default:
+            break;
+    }
+}
+
 
 
 Vec2
@@ -32,8 +84,6 @@ rect_create (Rect *const parent, const Vec2 pos, const int width, const int heig
     rect->childLeft = NULL;
     rect->childRight = NULL;
     rect->room = NULL;
-
-    rect->color = rng_color_hex ();
 
 
     rect->pos = pos;
@@ -147,8 +197,6 @@ room_set (Room *const room, const Vec2 pos, const int width, const int height)
     room->center = vec2 (pos.x + width / 2, pos.y + height / 2);
 
     room->next = NULL;
-
-    room->color = 0x757575;
 }
 
 
@@ -157,7 +205,6 @@ room_create (const Vec2 pos, const int width, const int height)
 {
     Room *room = malloc (sizeof (Room));
     room_set (room, pos, width, height);
-    room->count = room_count++;
     return room;
 }
 
@@ -212,9 +259,6 @@ bsp_corridor (Rect *const rect, const Vec2 p)
     }
 
     
-    if (arg.flag_debug)
-        printf ("[%i] to [%i] via (%i)\n", left->count, right->count, room_count);
-        
     int min;
     int max;
     if (room_overlap (left, right, 0, &min, &max))
@@ -228,7 +272,6 @@ bsp_corridor (Rect *const rect, const Vec2 p)
             *room = room_create (vec2 (left->pos.x + left->width, min),
                     dx, arg.corridorWidth);
 
-        (*room)->color = 0xFFA500;
         return;
     }
     else if (room_overlap (left, right, 1, &min, &max))
@@ -242,7 +285,6 @@ bsp_corridor (Rect *const rect, const Vec2 p)
             *room = room_create (vec2 (min, left->pos.y + left->height),
                     arg.corridorWidth, dy);
 
-        (*room)->color = 0xFFA500;
         return;
     }
 
@@ -305,9 +347,6 @@ bsp_corridor (Rect *const rect, const Vec2 p)
                 vec2 ((*room)->pos.x + (dx > 0 ? 0 : 1), posy),
                 vec2 (dx > 0 ? right->pos.x : right->pos.x + right->width, posy + arg.corridorWidth));
     }   
-
-    (*room)->color = 0xFFA500;
-    (*room)->next->color = 0x008000;
 }
 
 
@@ -328,10 +367,7 @@ bsp (Rect **r, const int iteration, const int numCorridors)
     if (iteration)
     {
         bsp_divide (rect);
-        int color = rng_color_hex ();
         // TODO if (! rect->childLeft && ! rect->childRight)
-        rect->childLeft->color = color;
-        rect->childRight->color = color;
 
         bsp (&(rect->childLeft), iteration - 1, (numCorridors - 2 > 1) ? numCorridors - 2 : 1);
         bsp (&(rect->childRight), iteration - 1, (numCorridors - 2 > 1) ? numCorridors - 2 : 1);
@@ -422,55 +458,14 @@ room_free (Room *room)
 
 
 void
-rect_free (Rect *rect)
+Rect_free (Rect *rect)
 {
     if (! rect)
         return;
-
-    rect_free (rect->childLeft);
-    rect_free (rect->childRight);
-
-    rect->childLeft = NULL;
-    rect->childRight = NULL;
+    Rect_free (rect->childLeft);
+    Rect_free (rect->childRight);
 
     room_free (rect->room);
-    rect->room = NULL;
-
     free (rect);
 }
-
-
-void
-room_to_map (const Room *const room, char *map)
-{
-    if (! room)
-        return;
-
-    for (int x = room->pos.x; x < room->pos.x + room->width; x++)
-        for (int y = room->pos.y; y < room->pos.y + room->height; y++)
-            map[y * arg.mapWidth + x] = e_room;
-}
-
-
-char *
-map_from_bsp (Rect *const rect, char *map)
-{
-    if (! rect)
-        return NULL;
-
-    char *_map = map;
-    if (! _map)
-        _map = calloc (arg.mapWidth * arg.mapHeight, sizeof (char));
-
-    map_from_bsp (rect->childLeft, _map);
-    map_from_bsp (rect->childRight, _map);
-
-    for (Room *room = rect->room; room; room = room->next)
-        room_to_map (room, _map);
-
-    return _map;
-}
-
-
-
 
