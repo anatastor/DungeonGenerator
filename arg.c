@@ -22,7 +22,9 @@ struct Arguments arg = {
     0, // roomSize
     5, // minRoomSize
     NULL, // outfile
-    1 // numLevels
+    1, // numLevels
+    0, // dungeonDesign
+    0.0 // dungeonDecay
 };
 
 error_t
@@ -81,6 +83,14 @@ parse_opt (int key, char *args, struct argp_state *state)
                 fprintf (stderr, "roomOffset invalid < 0, using default value\n");
                 arg.roomOffset = 1;
             }
+            break;
+
+        case 506:
+            arg.dungeonDesign = atoi (args);
+            break;
+
+        case 507:
+            sscanf (args, "%f", &arg.dungeonDecay);
             break;
 
         default:

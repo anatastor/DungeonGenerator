@@ -25,6 +25,8 @@ struct Arguments
     int minRoomSize;
     char *outfile;
     int numLevels;
+    int dungeonDesign;
+    float dungeonDecay;
 };
 
 
@@ -46,6 +48,8 @@ static struct argp_option options[] = {
     {"roomOffset", 505, "offset", 0, "offset to the edges of the rectangle (default: 1)"},
     {"output", 'o', "FILE", 0, "Output to FILE (default: 'out.png')"},
     {"numLevels", 'l', "NUMLEVELS", 0, "number of levels to generate"},
+    {"design", 506, "Design", 0, "Design Preset"},
+    {"decay", 507, "Decay", 0, "Decay of the Map"},
     {0}
 };
 

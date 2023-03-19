@@ -17,6 +17,7 @@ typedef struct
 
     enum DungeonDesign {
         DungeonDesign_Catacombs = 0,
+        DungeonDesign_Catacombs2,
         DungeonDesign_Tower,
     } design;
 } Dungeon;

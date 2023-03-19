@@ -113,10 +113,11 @@ render_map (Renderer *r, const char *const map, const int width, const int heigh
 {
     static const int colors[] = {
         0x0c090a, // None
-        0x757575, // Floor
-        0x7FFFD4, // Wall
+        0xC0C0C0, // Floor
+        0x504A4B, // Wall
         0x008000, // Stair Up
-        0x800000 // Stair Down
+        0x800000, // Stair Down
+        0xAA6C39  // Decay
     };
 
     for (int i = 0; i < width * height; i++)

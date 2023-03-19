@@ -153,9 +153,45 @@ map_valid_stairs (char *const map_h, char *const map_l, const int width, const i
 
 
 void
+map_decay_step (char *const map, const int width, const int height, const int pos, const int steps)
+{
+    if (! steps) return;
+
+    if (pos / width == 0) return; // ignore y = 0
+    if (pos / width == height - 1) return; // ignore y = mapHeight
+    if (pos % width == 0) return; // ignore x = 0
+    if (pos % width == width - 1) return; // ignore x = mapWidth
+    
+    //if (map[pos] == TileType_Wall || map[pos] == TileType_None)
+    if (map[pos] < 3)
+        map[pos] = TileType_Decay;
+    
+    for (int i = 0; i < rng () % 13; i++) ;
+    switch (rng () % 4)
+    {
+        case 0:
+            map_decay_step (map, width, height, pos - width, steps - 1);
+            break;
+
+        case 1:
+            map_decay_step (map, width, height, pos + 1, steps - 1);
+            break;
+
+        case 2:
+            map_decay_step (map, width, height, pos - width, steps - 1);
+            break;
+
+        case 3:
+            map_decay_step (map, width, height, pos - 1, steps - 1);
+            break;
+    }
+}
+
+
+void
 map_fprint (FILE *const fp, const char *const map, const int width, const int height)
 {
-    static const char clist[] = " +X/\\";
+    static const char clist[] = " +X/\\%";
     for (int i = 0; i < width * height; i++)
     {
         if (i / width == 0 ||
