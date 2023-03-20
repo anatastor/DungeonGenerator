@@ -5,7 +5,6 @@
 int room_count = 0;
 
 
-
 struct BspOptions bspOptions = {
     3, // iterations
     1, // corridorWidt
@@ -13,7 +12,6 @@ struct BspOptions bspOptions = {
     5, // minRoomSize
     1, // roomOffset
 };
-
 
 
 void
@@ -91,6 +89,7 @@ rect_create (Rect *const parent, const Vec2 pos, const int width, const int heig
     rect->width = width;
     rect->height = height;
     rect->split = vec2 (0, 0);
+
     return rect;
 }
 
@@ -147,10 +146,14 @@ room_closest_to_vec2 (Rect *const rect, const Vec2 vec2)
     else
         return rect->room;
     
-    float dt = vec2_distance (tmp->center, vec2);
-    float dc = vec2_distance (curr->center, vec2);
+    if (curr)
+    {
+        float dt = vec2_distance (tmp->center, vec2);
+        float dc = vec2_distance (curr->center, vec2);
+        return (dc <= dt) ? curr : tmp;
+    }
 
-    return (dc <= dt) ? curr : tmp;
+    return tmp;
 }
 
 
@@ -284,6 +287,8 @@ bsp_corridor (Rect *const rect, const Vec2 p)
     {
         // rooms are parallel in y direction
         int dx = right->pos.x - left->pos.x - left->width;
+        if (dx == 0) return; // TODO comment
+
         if (max > min + 1)
             *room = room_create (vec2 (left->pos.x + left->width, min + (max - min - cw) / 2),
                     dx, (max - min > cw) ? cw : max - min + 1);
@@ -297,6 +302,8 @@ bsp_corridor (Rect *const rect, const Vec2 p)
     {
         // rooms are parallel in x direction
         int dy = right->pos.y - left->pos.y - left->height;
+        if (dy == 0) return; // TODO comment
+
         if (max > min + 1)
             *room = room_create (vec2 (min + (max - min - cw) / 2, left->pos.y + left->height),
                     (max - min > cw) ? cw : max - min + 1, dy);
@@ -410,7 +417,7 @@ bsp (Rect **r, const int iteration, const int numCorridors)
                 vec = vec2 (pos, rand);
             else
                 vec = vec2 (rand, pos);
-
+            
             Room *left = room_closest_to_vec2 (rect->childLeft, vec);
             Room *right = room_closest_to_vec2 (rect->childRight, left->center);
 

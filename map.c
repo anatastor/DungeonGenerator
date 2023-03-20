@@ -99,7 +99,7 @@ map_generate (char *const map, Vec2 pos, const int width, const int height, cons
 
 void
 map_create_walls (char *const map, const int width, const int height)
-{
+{   
     char *dilatation = p_map_dilatation (map, width, height);
     for (int i = 0; i < width * height; i++)
         if (map[i] ^ dilatation[i])
@@ -211,7 +211,7 @@ map_fprint (FILE *const fp, const char *const map, const int width, const int he
 {
     static const char clist[] = " +X/\\%";
     for (int i = 0; i < width * height; i++)
-    {
+    {   
         if (i / width == 0 ||
             i / width == height - 1 ||
             i % width == 0 ||
