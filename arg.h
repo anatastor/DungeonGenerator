@@ -42,7 +42,7 @@ static struct argp_option options[] = {
     {"mapSize", 500, "WIDTHxHEIGHT", 0, "Map size in WIDTHxHEIGHT squares (default: 40x30)"},
     {"gridSize", 501, "pixels", 0, "Size of one square in pixels (default: 25)"},
     {"corridorWidth", 502, "width", 0, "Width of the corridors in Squares"},
-    {"number-of-corridors", 503, "number", 0,
+    {"numCorridors", 503, "number", 0,
         "Number of corridors for the top level, decreases by 1 each level to a minimu of 1"},
     {"roomSize", 504, "size", 0, "Number of Rolls for the Room size "
         "size > 0 leads to greater rooms while size < 0 leads to overall smaller rooms (default: 0)"},

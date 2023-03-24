@@ -7,7 +7,7 @@ int room_count = 0;
 
 struct BspOptions bspOptions = {
     3, // iterations
-    1, // corridorWidt
+    1, // corridorWidth
     3, // roomSize
     5, // minRoomSize
     1, // roomOffset
@@ -195,26 +195,32 @@ room_overlap (Room *r1, Room *r2, const int dir, int *const min, int *const max)
 }
 
 
-void
-room_set (Room *const room, const Vec2 pos, const int width, const int height)
-{
-    room->pos = pos;
-    room->width = width;
-    room->height = height;
-
-    room->center = vec2 (pos.x + width / 2, pos.y + height / 2);
-
-    room->next = NULL;
-}
-
-
 Room *
 room_create (const Vec2 pos, const int width, const int height)
 {
     Room *room = malloc (sizeof (Room));
-    room_set (room, pos, width, height);
 
     room->num = room_count++;
+
+    room->pos = pos;
+    room->width = width ? width : 1;
+    room->height = height ? height : 1;
+
+    // guarantee pos to always be the top left
+    if (width < 0)
+    {
+        room->pos.x = pos.x + width;
+        room->width = -width;
+    }
+    if (height < 0)
+    {
+        room->pos.y = pos.y + height;
+        room->height = -height;
+    }
+
+    room->center = vec2 (pos.x + width / 2, pos.y + height / 2);
+
+    room->next = NULL;
 
     if (arg.flag_debug)
     {
@@ -226,34 +232,52 @@ room_create (const Vec2 pos, const int width, const int height)
 }
 
 
-void
-room_set_from_vec2 (Room *const room, const Vec2 p1, const Vec2 p2)
-{
-    int xmin = (p1.x <= p2.x) ? p1.x : p2.x;
-    int xmax = (p1.x >= p2.x) ? p1.x : p2.x;
-    int ymax = (p1.y >= p2.y) ? p1.y : p2.y;
-    int ymin = (p1.y <= p2.y) ? p1.y : p2.y;
-
-    room_set (room, vec2 (xmin, ymin), xmax - xmin, ymax - ymin);
-}
-
-
 Room *
-room_create_from_vec2 (const Vec2 p1, const Vec2 p2)
-{       
-    int xmin = (p1.x <= p2.x) ? p1.x : p2.x;
-    int xmax = (p1.x >= p2.x) ? p1.x : p2.x;
-    int ymax = (p1.y >= p2.y) ? p1.y : p2.y;
-    int ymin = (p1.y <= p2.y) ? p1.y : p2.y;
+bsp_corridor_overlap (Room *const left, Room *const right)
+{   
+    int min = 0;
+    int max = 0;
 
-    return room_create (vec2 (xmin, ymin), xmax - xmin, ymax - ymin);
-}
+    int cw = arg.corridorWidth;
 
 
-int
-signf (const int x, const int f)
-{
-    return f * ((x > 0) - (x < 0));
+    if (room_overlap (left, right, 0, &min, &max))
+    {
+        // rooms are overlapping in y direction
+        if (arg.flag_debug)
+            printf ("overlap Y %i, %i, %i\n", min, max, cw);
+
+        int dx = right->pos.x - left->pos.x - left->width;
+        if (dx == 0) return NULL; // rooms are already overlapping
+            
+        // TODO corridor not only in the middle
+        if (max > min + cw)
+            return room_create (vec2 (left->pos.x + left->width, min + (max - min - cw) / 2),
+                    dx, (max - min > cw) ? cw : max - min + 1);
+        else
+            return room_create (vec2 (left->pos.x + left->width, min + 1),
+                    dx, max - min - 1);
+    }
+    
+    if (room_overlap (left, right, 1, &min, &max))
+    {
+        // rooms are overlapping in x direction
+        if (arg.flag_debug)
+            printf ("overlap X: %i, %i, %i\n", min, max, cw);
+
+        int dy = right->pos.y - left->pos.y - left->height;
+        if (dy == 0) return NULL; // rooms are already overlapping
+            
+        // TODO corridor not only in the middle
+        if (max > min + cw)
+            return room_create (vec2 (min + (max - min - cw) / 2, left->pos.y + left->height),
+                    (max - min > cw) ? cw : max - min + 1, dy);
+        else
+            return room_create (vec2 (min + 1, left->pos.y + left->height),
+                    max - min - 1, dy);
+    }
+
+    return NULL;
 }
 
 
@@ -263,6 +287,8 @@ bsp_corridor (Rect *const rect, const Vec2 p)
     Room *left = room_closest_to_vec2 (rect->childLeft, p);
     // pick room from right tree closest to result of left tree
     Room *right = room_closest_to_vec2 (rect->childRight, left->center); 
+
+    int cw = arg.corridorWidth;
 
     Room **room;
     Room *tmp;
@@ -277,102 +303,40 @@ bsp_corridor (Rect *const rect, const Vec2 p)
     if (arg.flag_debug)
         printf ("[%i] to [%i] via (%i)\n", left->num, right->num, room_count);
 
-    
-    int min = 0;
-    int max = 0;
-    int cw = arg.corridorWidth;
+    *room = bsp_corridor_overlap (left, right);
+    if (*room) return;
 
-    // TODO Corridor not only in middle
-    if (room_overlap (left, right, 0, &min, &max))
-    {
-        // rooms are parallel in y direction
-        int dx = right->pos.x - left->pos.x - left->width;
-        if (dx == 0) return; // TODO comment
-
-        if (max > min + 1)
-            *room = room_create (vec2 (left->pos.x + left->width, min + (max - min - cw) / 2),
-                    dx, (max - min > cw) ? cw : max - min + 1);
-        else
-            *room = room_create (vec2 (left->pos.x + left->width, min),
-                    dx, (max - min > cw) ? cw : max - min + 1);
-
-        return;
-    }
-    else if (room_overlap (left, right, 1, &min, &max))
-    {
-        // rooms are parallel in x direction
-        int dy = right->pos.y - left->pos.y - left->height;
-        if (dy == 0) return; // TODO comment
-
-        if (max > min + 1)
-            *room = room_create (vec2 (min + (max - min - cw) / 2, left->pos.y + left->height),
-                    (max - min > cw) ? cw : max - min + 1, dy);
-        else
-            *room = room_create (vec2 (min, left->pos.y + left->height),
-                    (max - min > cw) ? cw : max - min + 1, dy);
-
-        return;
-    }
-
-    // rooms are not parallel
     // constructing L-shaped corridor
-    // TODO Fix generation with corridorWidth > 1
     int dx = right->center.x - left->center.x;
     int dy = right->center.y - left->center.y;
     if (arg.flag_debug)
-        printf ("\tdx: %i\tdy: %i\n", dx, dy);
+        printf ("L:\t dx: %i\tdy: %i\n", dx, dy);
 
     if (abs (dx) >= abs (dy))
     {   
-        int x = (dx > 0) ? left->pos.x + left->width : left->pos.x;
-        *room = room_create_from_vec2 (
-                vec2 (x, left->center.y),
-                vec2 (x + 100 * dx, left->center.y + arg.corridorWidth));
+        int x = (dx > 0) ? left->pos.x + left->width : left->pos.x; 
 
-        room_overlap (*room, right, 1, &min, &max);
-        if (arg.flag_debug)
-        {
-            printf ("\t(%i, %i) -> (%i, %i)\n",
-                    (*room)->pos.x, (*room)->pos.y,
-                    (*room)->pos.x + (*room)->width,
-                    (*room)->pos.y + (*room)->height);
-            printf ("\tX: min: %i; max: %i\n", min, max);
-        }
+        if (left->height > cw)
+            *room = room_create (vec2 (x, left->pos.y + (left->height - cw) / 2),
+                    right->pos.x + right->width - x, cw);
+        else
+            *room = room_create (vec2 (x, left->pos.y + 1),
+                    right->pos.x + right->width - x, left->height - 2);
 
-        int posx = rng_between (min, max);
-        room_set_from_vec2 (*room,
-                vec2 (x, left->center.y),
-                vec2 (posx + arg.corridorWidth, left->center.y + arg.corridorWidth));
-        
-        (*room)->next = room_create_from_vec2 (
-                vec2 (posx, (*room)->pos.y + (dy > 0 ? 0 : 1)),
-                vec2 (posx + arg.corridorWidth, dy > 0 ? right->pos.y : right->pos.y + right->height));
+        (*room)->next = bsp_corridor_overlap (*room, right);
     }
     else
     {   
         int y = (dy > 0) ? left->pos.y + left->height : left->pos.y;
-        *room = room_create_from_vec2 (
-                vec2 (left->center.x, y),
-                vec2 (left->center.x + arg.corridorWidth, y + 100 * dy));
 
-        room_overlap (*room, right, 0, &min, &max);
-        if (arg.flag_debug)
-        {
-            printf ("\t(%i, %i) -> (%i, %i)\n",
-                    (*room)->pos.x, (*room)->pos.y,
-                    (*room)->pos.x + (*room)->width,
-                    (*room)->pos.y + (*room)->height);
-            printf ("\tY: min: %i; max: %i\n", min, max);
-        }
+        if (left->width > cw)
+            *room = room_create (vec2 (left->pos.x + (left->width - cw) / 2, y),
+                    cw, right->pos.y + right->height - y);
+        else
+            *room = room_create (vec2 (left->pos.x + 1, y),
+                    left->width - 2, right->pos.y + right->height - y);
 
-        int posy = rng_between (min, max);
-        room_set_from_vec2 (*room,
-                vec2 (left->center.x, y),
-                vec2 (left->center.x + arg.corridorWidth, posy + arg.corridorWidth));
-
-        (*room)->next = room_create_from_vec2 (
-                vec2 ((*room)->pos.x + (dx > 0 ? 0 : 1), posy),
-                vec2 (dx > 0 ? right->pos.x : right->pos.x + right->width, posy + arg.corridorWidth));
+        (*room)->next = bsp_corridor_overlap (*room, right);
     }   
 }
 

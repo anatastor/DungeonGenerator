@@ -32,6 +32,10 @@ main (int argc, char **argv)
         render_map (renderer, &dungeon.map[i * dungeon.width * dungeon.height], 
                 dungeon.width, dungeon.height, arg.gridSize);
         render_grid (renderer, arg.gridSize, 0x757575);
+
+        if (arg.flag_debug)
+            render_grid (renderer, arg.gridSize * 10, 0xFF0000);
+
         sprintf (buffer, "level_%02i.png", i);
         render_save (renderer, buffer);
     
