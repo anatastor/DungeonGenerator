@@ -55,6 +55,8 @@ Dungeon_generate_design_catacomb (Dungeon dungeon)
         int width = rng_between ((f1 - 2) * dungeon.width / f1, (f1 - 1) * dungeon.width / f1);
         int height = rng_between ((f1 - 2) * dungeon.height / f1, (f1 - 1) * dungeon.height / f1);
 
+        bsp_set_parameters (&dungeon.bspParameters[i * e_BspParameters_Size]);
+
         Vec2 pos = vec2 (rng_between (0, dungeon.width - width),
                 rng_between (0, dungeon.height - height));
 
@@ -110,6 +112,53 @@ Dungeon_decay (Dungeon dungeon)
 }
 
 
+void
+p_dungeon_parse_level (char *str, int level, int *data)
+{
+    if (! str) return;
+
+    char *last;
+    char *first = cstr_get (str, &last, ',');
+    do
+    {
+        char *key = strchr (first, '=');
+        if (key)
+            *key = '\0';
+        else
+            continue;
+        
+        int i;
+        for (i = 0; i < e_BspParameters_Size; i++)
+            if (strcmp (first, bsp_parameter_keys[i]) == 0) break;
+
+        int value = atoi (key + 1);
+        data[i + level * e_BspParameters_Size] = value;
+
+        first = cstr_get (last, &last, ',');
+    }
+    while (first);
+}
+
+
+void
+p_dungeon_parse_levels (char *str, int *data)
+{
+    if (! str) return;
+
+    char *last;
+    char *first = cstr_get (str, &last, ';');
+    do
+    {
+        int level;
+        sscanf (first, "%i,%s,", &level, first);
+        p_dungeon_parse_level (first, level, data);
+        first = cstr_get (last, &last, ';');
+    }
+    while (first);
+
+}
+
+
 
 // ----- public functions -----
 
@@ -121,8 +170,30 @@ Dungeon_create (const int numLevels, const int width, const int height)
         height,
         numLevels,
         calloc (numLevels * width * height, sizeof (char)),
-        arg.dungeonDesign
+        arg.dungeonDesign,
+        NULL,
     };
+
+    int bspGlobalParameters[] = {
+        arg.iterations,
+        arg.roomSize,
+        arg.minRoomSize,
+        arg.roomOffset,
+        arg.rectOffset,
+        arg.corridorWidth
+    };
+   
+    dungeon.bspParameters = malloc (sizeof (int) * e_BspParameters_Size * dungeon.numLevels);
+    // default parameter setzen
+    for (int i = 0; i < dungeon.numLevels * e_BspParameters_Size; i++)
+    {
+        int index = i % e_BspParameters_Size;
+        dungeon.bspParameters[i] = bspGlobalParameters[index];
+    }
+    //bsp_set_parameters (dungeon.bspGlobalParameters);
+
+    p_dungeon_parse_levels (arg.levelData, dungeon.bspParameters);
+
 
     Dungeon_generate_design (dungeon);
     Dungeon_decay (dungeon);

@@ -3,7 +3,7 @@ CC ?= gcc
 
 PROG = dungeonGenerator
 
-OBJ = arg.o rng.o cairo_renderer.o bsp.o map.o dungeon.o
+OBJ = cstr.o vec2.o arg.o rng.o cairo_renderer.o bsp.o map.o dungeon.o
 
 CFLAGS = -I/usr/include/cairo
 LDFLAGS = -lcairo -lm

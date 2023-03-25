@@ -46,3 +46,10 @@ A simple Dungeon Generator.
     XXXXXXX                                                                   
 
 
+
+# Examples
+
+Generating 5 levels with a corridor width of 3 tiles and a bigger room size for level 1.
+`./dungeonGenerator -i 5 -l 5 -L '1, corridorWidth=3, roomSize=5'`
+
+

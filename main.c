@@ -46,9 +46,10 @@ main (int argc, char **argv)
         }
     }
     
+
+    /*** FREE ***/
     if (arg.outfile)
         fclose (fp);
-
 
     Dungeon_destroy (dungeon);
     render_destroy (renderer);

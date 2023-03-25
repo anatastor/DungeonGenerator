@@ -6,26 +6,32 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
-#include <math.h>
 
-#include "arg.h"
+
 #include "rng.h"
+#include "vec2.h"
 
 
-struct BspOptions
+enum 
 {
-    int iterations;
-    int corridorWidth;
-    int roomSize;
-    int minRoomSize;
-    int roomOffset;
+    e_BspParameters_Iterations = 0,
+    e_BspParameters_RoomSize,
+    e_BspParameters_MinRoomSize,
+    e_BspParameters_RoomOffset,
+    e_BspParameters_RectOffset,
+    e_BspParameters_CorridorWidth,
+    e_BspParameters_Size
 };
 
-typedef struct
-{
-    int x;
-    int y;
-} Vec2;
+
+static const char *bsp_parameter_keys[] = {
+    "iterations",
+    "roomSize",
+    "minRoomSize",
+    "roomOffset",
+    "rectOffset",
+    "corridorWidth"
+};
 
 
 typedef struct Room
@@ -40,7 +46,6 @@ typedef struct Room
 
     struct Room *next;
 } Room;
-
 
 
 typedef struct Rect
@@ -59,22 +64,8 @@ typedef struct Rect
 } Rect;
 
 
-
-enum Stuff
-{
-    e_empty = 0,
-    e_room,
-    e_stair_up,
-    e_stair_down,
-    e_wall
-};
-
-
-void bsp_set_option (char *const name, int value);
-
-
-Vec2 vec2 (const int, const int);
-
+void bsp_set_debug ();
+void bsp_set_parameters (int *parameters);
 
 
 Rect *rect_create (Rect *const, const Vec2, const int, const int);

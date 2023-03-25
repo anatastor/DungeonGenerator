@@ -10,7 +10,6 @@ const char *argp_program_bug_address =
 
 struct Arguments arg = {
     0, // flag debug
-    0, // flag color
     0x0815, // seed
     5, // iterations
     25, // grid size
@@ -25,8 +24,10 @@ struct Arguments arg = {
     1, // numLevels
     0, // dungeonDesign
     0.0, // dungeonDecay
-    0 // rectOffset
+    0, // rectOffset
+    {0} // levelData
 };
+
 
 error_t
 parse_opt (int key, char *args, struct argp_state *state)
@@ -35,10 +36,7 @@ parse_opt (int key, char *args, struct argp_state *state)
     {   
         case 'D':
             arg.flag_debug = 1;
-            break;
-
-        case 'C':
-            arg.flag_color = 1;
+            bsp_set_debug ();
             break;
 
         case 's':
@@ -100,6 +98,10 @@ parse_opt (int key, char *args, struct argp_state *state)
 
         case 509:
             arg.minRoomSize = atoi (args);
+            break;
+
+        case 'L':
+            cstr_remove (args, arg.levelData, " ");
             break;
 
         default:

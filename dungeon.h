@@ -3,6 +3,7 @@
 #define _DUNGEON_H_
 
 #include "arg.h"
+#include "cstr.h"
 #include "bsp.h"
 #include "map.h"
 
@@ -20,6 +21,8 @@ typedef struct
         DungeonDesign_Catacombs2,
         DungeonDesign_Tower,
     } design;
+
+    int *bspParameters;
 } Dungeon;
 
 
