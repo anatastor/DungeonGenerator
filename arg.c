@@ -25,7 +25,7 @@ struct Arguments arg = {
     0, // dungeonDesign
     0.0, // dungeonDecay
     0, // rectOffset
-    {0} // levelData
+    {'\0'} // levelData
 };
 
 

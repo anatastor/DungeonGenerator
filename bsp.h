@@ -20,6 +20,7 @@ enum
     e_BspParameters_RoomOffset,
     e_BspParameters_RectOffset,
     e_BspParameters_CorridorWidth,
+    e_BspParameters_NumCorridors,
     e_BspParameters_Size
 };
 

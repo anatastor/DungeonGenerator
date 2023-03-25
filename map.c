@@ -80,18 +80,19 @@ p_map_dilatation (char *map, const int width, const int height)
 // ----- public functions -----
 
 void
-map_generate (char *const map, Vec2 pos, const int width, const int height, const int mwidth, const int mheight)
+map_generate (char *const map, Vec2 pos, const int width, const int height,
+        const int mapWidth, const int mapHeight, int* bspParameters)
 {
     Rect *head = rect_create (NULL, vec2 (pos.x + 1, pos.y + 1), width - 2, height - 2);
 
-    int numCorridors = arg.numCorridors;
+    int numCorridors = bspParameters[e_BspParameters_NumCorridors];
     if (! numCorridors)
         numCorridors = (width > height) ? height / 20 : width / 20;
 
-    bsp (&head, arg.iterations, numCorridors);
+    bsp (&head, bspParameters[e_BspParameters_Iterations], numCorridors);
 
-    p_map_from_bsp (head, map, mwidth);
-    map_create_walls (map, mwidth, mheight);
+    p_map_from_bsp (head, map, mapWidth);
+    map_create_walls (map, mapWidth, mapHeight);
 
     Rect_free (head);
 }

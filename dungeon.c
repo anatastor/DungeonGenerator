@@ -60,9 +60,13 @@ Dungeon_generate_design_catacomb (Dungeon dungeon)
         Vec2 pos = vec2 (rng_between (0, dungeon.width - width),
                 rng_between (0, dungeon.height - height));
 
+        if (arg.flag_debug)
+            printf ("\nLevel %i\n\n", i);
+
         map_generate (&dungeon.map[i * dungeon.width * dungeon.height],
                 pos, width, height,
-                dungeon.width, dungeon.height);
+                dungeon.width, dungeon.height,
+                &dungeon.bspParameters[i * e_BspParameters_Size]);
         
         // TODO Catch Error when no stairs could be generated
         if (i)
@@ -144,6 +148,7 @@ void
 p_dungeon_parse_levels (char *str, int *data)
 {
     if (! str) return;
+    if (*str == '\0') return;
 
     char *last;
     char *first = cstr_get (str, &last, ';');
@@ -151,6 +156,8 @@ p_dungeon_parse_levels (char *str, int *data)
     {
         int level;
         sscanf (first, "%i,%s,", &level, first);
+        if (arg.flag_debug)
+            printf ("Level %i: %s\n", level, first);
         p_dungeon_parse_level (first, level, data);
         first = cstr_get (last, &last, ';');
     }
@@ -180,18 +187,19 @@ Dungeon_create (const int numLevels, const int width, const int height)
         arg.minRoomSize,
         arg.roomOffset,
         arg.rectOffset,
-        arg.corridorWidth
+        arg.corridorWidth,
+        arg.numCorridors
     };
    
     dungeon.bspParameters = malloc (sizeof (int) * e_BspParameters_Size * dungeon.numLevels);
-    // default parameter setzen
+
+    // set global parameters
     for (int i = 0; i < dungeon.numLevels * e_BspParameters_Size; i++)
     {
         int index = i % e_BspParameters_Size;
         dungeon.bspParameters[i] = bspGlobalParameters[index];
     }
-    //bsp_set_parameters (dungeon.bspGlobalParameters);
-
+    
     p_dungeon_parse_levels (arg.levelData, dungeon.bspParameters);
 
 

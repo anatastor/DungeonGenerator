@@ -4,7 +4,6 @@
 
 #include <stdio.h>
 
-#include "arg.h"
 #include "bsp.h"
 
 
@@ -24,7 +23,8 @@ enum DilatationErosion {
 };
 
 
-void map_generate (char *const map, Vec2 pos, const int width, const int height, const int mwidth, const int mheight);
+void map_generate (char *const map, Vec2 pos, const int width, const int height,
+        const int mapWidth, const int mapHeight, int *bspParameters);
 
 void map_create_walls (char *const map, const int width, const int height);
 
