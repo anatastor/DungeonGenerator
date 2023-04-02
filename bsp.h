@@ -14,14 +14,14 @@
 
 enum 
 {
-    e_BspParameters_Iterations = 0,
-    e_BspParameters_RoomSize,
-    e_BspParameters_MinRoomSize,
-    e_BspParameters_RoomOffset,
-    e_BspParameters_RectOffset,
-    e_BspParameters_CorridorWidth,
-    e_BspParameters_NumCorridors,
-    e_BspParameters_Size
+    e_BspParameter_Iterations = 0,
+    e_BspParameter_RoomSize,
+    e_BspParameter_MinRoomSize,
+    e_BspParameter_RoomOffset,
+    e_BspParameter_RectOffset,
+    e_BspParameter_CorridorWidth,
+    e_BspParameter_NumCorridors,
+    e_BspParameter_SIZE_
 };
 
 
@@ -31,8 +31,11 @@ static const char *bsp_parameter_keys[] = {
     "minRoomSize",
     "roomOffset",
     "rectOffset",
-    "corridorWidth"
+    "corridorWidth",
+    "numCorridors"
 };
+
+
 
 
 typedef struct Room
@@ -66,7 +69,7 @@ typedef struct Rect
 
 
 void bsp_set_debug ();
-void bsp_set_parameters (int *parameters);
+void bsp_set_parameters (int *const parameters);
 
 
 Rect *rect_create (Rect *const, const Vec2, const int, const int);

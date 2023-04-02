@@ -81,15 +81,15 @@ p_map_dilatation (char *map, const int width, const int height)
 
 void
 map_generate (char *const map, Vec2 pos, const int width, const int height,
-        const int mapWidth, const int mapHeight, int* bspParameters)
+        const int mapWidth, const int mapHeight, int *const parameters)
 {
     Rect *head = rect_create (NULL, vec2 (pos.x + 1, pos.y + 1), width - 2, height - 2);
 
-    int numCorridors = bspParameters[e_BspParameters_NumCorridors];
+    int numCorridors = parameters[e_BspParameter_NumCorridors];
     if (! numCorridors)
         numCorridors = (width > height) ? height / 20 : width / 20;
 
-    bsp (&head, bspParameters[e_BspParameters_Iterations], numCorridors);
+    bsp (&head, parameters[e_BspParameter_Iterations], numCorridors);
 
     p_map_from_bsp (head, map, mapWidth);
     map_create_walls (map, mapWidth, mapHeight);
@@ -114,9 +114,9 @@ void
 map_dilatation_erosion (char **map, const int width, const int height, enum DilatationErosion type)
 {   
     char *tmp = NULL;
-    if (type == DE_Dilatation)
+    if (type == e_Dilatation)
         tmp = p_map_dilatation (*map, width, height);
-    else if (type == DE_Erosion)
+    else if (type == e_Erosion)
         tmp = p_map_erosion (*map, width, height);
 
     if (tmp)
@@ -124,6 +124,20 @@ map_dilatation_erosion (char **map, const int width, const int height, enum Dila
         free (*map);
         *map = tmp;
     }
+}
+
+
+void
+map_dilatation (char *const map, const int width, const int height)
+{
+    char *tmp = NULL;
+    tmp = p_map_dilatation (map, width, height);
+        
+    //memcpy (map, tmp, sizeof (int) * width * height);
+    for (int i = 0; i < width * height; i++)
+        map[i] = tmp[i];
+
+    free (tmp);
 }
 
 
@@ -143,8 +157,8 @@ map_valid_stairs (char *const map_h, char *const map_l, const int width, const i
 {
     char *tmp = map_compare (map_h, map_l, width * height);
     
-    map_dilatation_erosion (&tmp, width, height, DE_Erosion);
-    map_dilatation_erosion (&tmp, width, height, DE_Dilatation);
+    map_dilatation_erosion (&tmp, width, height, e_Erosion);
+    map_dilatation_erosion (&tmp, width, height, e_Dilatation);
 
     int count = 0;
     char *mapValid = malloc (sizeof (char) * width * height);
@@ -204,6 +218,34 @@ map_decay_step (char *const map, const int width, const int height, const int po
             map_decay_step (map, width, height, pos - 1, steps - 1);
             break;
     }
+}
+
+
+void
+map_drunken_dwarf_step (char *const map, const int width, const int height, const int pos, const int steps)
+{
+    if (! steps) return;
+
+    // set new seed at certain iterations
+    if (steps % 13 == 0) rng_seed (steps / 13 << 16 | pos * steps);
+    if (steps % 97 == 0) rng_seed (steps / 97 << 16 | pos * steps);
+
+    if (pos / width == 0) return; // ignore y = 0
+    if (pos / width == height - 1) return; // ignore y = mapHeight
+    if (pos % width == 0) return; // ignore x = 0
+    if (pos % width == width - 1) return; // ignore x = mapWidth
+    
+    map[pos] = TileType_Floor;
+
+    int r = rng () % 256;
+    int weights[] = {192, 128, 64, 0};
+    int offset[] = {-width, +1, +width, -1};
+    for (int i = 0; i < 4; i++)
+        if (r >= weights[i])
+        {
+            map_drunken_dwarf_step (map, width, height, pos + offset[i], steps - 1);
+            break;
+        }
 }
 
 

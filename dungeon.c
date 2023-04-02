@@ -4,7 +4,8 @@
 // ----- private functions -----
 
 int
-generate_stairs (char *const map_h, char *const map_l, const int width, const int height, const int numStairs)
+p_Dungeon_generate_stairs (char *const map_h, char *const map_l,
+        const int width, const int height, const int numStairs)
 {
     int countValid = 0;
     char *mapValid = map_valid_stairs (map_h, map_l, width, height, &countValid);
@@ -46,55 +47,7 @@ generate_stairs (char *const map_h, char *const map_l, const int width, const in
 
 
 void
-Dungeon_generate_design_catacomb (Dungeon dungeon)
-{
-    int numStairs = 5;
-    int f1 = 7;
-    for (int i = 0; i < dungeon.numLevels; i++)
-    {   
-        int width = rng_between ((f1 - 2) * dungeon.width / f1, (f1 - 1) * dungeon.width / f1);
-        int height = rng_between ((f1 - 2) * dungeon.height / f1, (f1 - 1) * dungeon.height / f1);
-
-        bsp_set_parameters (&dungeon.bspParameters[i * e_BspParameters_Size]);
-
-        Vec2 pos = vec2 (rng_between (0, dungeon.width - width),
-                rng_between (0, dungeon.height - height));
-
-        if (arg.flag_debug)
-            printf ("\nLevel %i\n\n", i);
-
-        map_generate (&dungeon.map[i * dungeon.width * dungeon.height],
-                pos, width, height,
-                dungeon.width, dungeon.height,
-                &dungeon.bspParameters[i * e_BspParameters_Size]);
-        
-        // TODO Catch Error when no stairs could be generated
-        if (i)
-            generate_stairs (&dungeon.map[(i - 1) * dungeon.width * dungeon.height],
-                    &dungeon.map[i * dungeon.width * dungeon.height],
-                    dungeon.width, dungeon.height, numStairs);
-    }
-}
-
-
-void
-Dungeon_generate_design (Dungeon dungeon)
-{
-    switch (dungeon.design)
-    {
-        case DungeonDesign_Catacombs:
-            Dungeon_generate_design_catacomb (dungeon);
-            break;
-
-        default:
-            Dungeon_generate_design_catacomb (dungeon);
-            break;
-    }
-}
-
-
-void
-Dungeon_decay (Dungeon dungeon)
+p_Dungeon_decay (Dungeon dungeon)
 {       
     if (arg.dungeonDecay == 0.0) return;
 
@@ -110,9 +63,25 @@ Dungeon_decay (Dungeon dungeon)
                 pos = rng () % dungeon.width + rng () % dungeon.height * dungeon.width;
             while (map[pos] != TileType_Floor);
 
-            map_decay_step (map, dungeon.width, dungeon.height, pos, steps);
+            map_drunken_dwarf_step (map, dungeon.width, dungeon.height, pos, steps);
         }
     }
+}
+
+
+int
+p_find_key (char *key)
+{
+    if (! key) return e_DungeonParameter_SIZE_;
+    
+    int i = 0;
+    for (; i < e_BspParameter_SIZE_; i++)
+        if (strcmp (key, bsp_parameter_keys[i]) == 0) return i;
+    
+    for (; i < e_DungeonParameter_SIZE_; i++)
+        if (strcmp (key, dungeonParameterKeys[i - e_BspParameter_SIZE_]) == 0) return i;
+    
+    return e_DungeonParameter_SIZE_;
 }
 
 
@@ -125,18 +94,22 @@ p_dungeon_parse_level (char *str, int level, int *data)
     char *first = cstr_get (str, &last, ',');
     do
     {
-        char *key = strchr (first, '=');
-        if (key)
-            *key = '\0';
+        char *tmp = strchr (first, '=');
+        if (tmp)
+            *tmp = '\0';
         else
             continue;
-        
-        int i;
-        for (i = 0; i < e_BspParameters_Size; i++)
-            if (strcmp (first, bsp_parameter_keys[i]) == 0) break;
 
-        int value = atoi (key + 1);
-        data[i + level * e_BspParameters_Size] = value;
+        int index = p_find_key (first);
+        if (index == e_DungeonParameter_SIZE_)
+        {
+            fprintf (stderr, "no option found for key '%s'\n", first);
+            continue;
+        }
+
+        // TODO Catch Errors
+        int value = atoi (tmp + 1);
+        data [index + level * e_DungeonParameter_SIZE_] = value;
 
         first = cstr_get (last, &last, ',');
     }
@@ -145,7 +118,7 @@ p_dungeon_parse_level (char *str, int level, int *data)
 
 
 void
-p_dungeon_parse_levels (char *str, int *data)
+p_dungeon_parse_levels (char *str, int *data, const int numLevels)
 {
     if (! str) return;
     if (*str == '\0') return;
@@ -156,13 +129,123 @@ p_dungeon_parse_levels (char *str, int *data)
     {
         int level;
         sscanf (first, "%i,%s,", &level, first);
+
         if (arg.flag_debug)
-            printf ("Level %i: %s\n", level, first);
-        p_dungeon_parse_level (first, level, data);
+            printf ("parsing Level %i: %s\n", level, first);
+
+        if (level < numLevels)
+            p_dungeon_parse_level (first, level, data);
+
         first = cstr_get (last, &last, ';');
     }
     while (first);
 
+}
+
+
+void
+p_Dungeon_generate_level_catacomb (char *const map,
+        const int mapWidth, const int mapHeight, int *const parameters)
+{
+    int width = rng_between (5 * mapWidth / 7, 6 * mapWidth / 7);
+    int height = rng_between (5 * mapHeight / 7, 6 * mapHeight / 7);
+    
+    Vec2 pos = vec2 (rng_between (0, mapWidth - width),
+            rng_between (0, mapHeight - height));
+
+    bsp_set_parameters (parameters);
+
+    map_generate (map, pos, width, height,
+            mapWidth, mapHeight, parameters);
+}
+
+
+void
+p_Dungeon_generate_level_cave (char *const map,
+        const int mapWidth, const int mapHeight, int *const parameters)
+{   
+    // TODO set numDwarves and steps relativ to map size
+    int numDwarves = 13;
+    int steps = 9973;
+    for (int i = 0; i < numDwarves; i++)
+    {
+        int pos = rng () % (mapWidth * mapHeight);
+        map_drunken_dwarf_step (map, mapWidth, mapHeight, pos, steps);
+    }
+    
+    // dilatation for bigger corridors
+    map_dilatation (map, mapWidth, mapHeight);
+}
+
+
+void
+p_Dungeon_generate_levels (Dungeon dungeon)
+{
+    for (int i = 0; i < dungeon.numLevels; i++)
+    {
+        rng_seed (dungeon.seeds[i]);
+        char design = dungeon.parameters[e_DungeonParameter_Design + i * e_DungeonParameter_SIZE_];
+
+        switch (design)
+        {
+            case e_DungeonDesign_Catacomb:
+                printf ("%i\tCatacomb\n", i);
+                p_Dungeon_generate_level_catacomb (&dungeon.map[i * dungeon.width * dungeon.height],
+                        dungeon.width, dungeon.height, &dungeon.parameters[i * e_DungeonParameter_SIZE_]);
+                break;
+
+            case e_DungeonDesign_Cave:
+                printf ("%i\tCave\n", i);
+                p_Dungeon_generate_level_cave (&dungeon.map[i * dungeon.width * dungeon.height],
+                        dungeon.width, dungeon.height, &dungeon.parameters[i * e_DungeonParameter_SIZE_]);
+                break;
+
+            default:
+                break;
+        }
+
+        int numStairs = dungeon.parameters[e_DungeonParameter_NumStairs + i * e_DungeonParameter_SIZE_];
+        if (i)
+            p_Dungeon_generate_stairs (&dungeon.map[(i - 1) * dungeon.width * dungeon.height],
+                    &dungeon.map[i * dungeon.width * dungeon.height],
+                    dungeon.width, dungeon.height, numStairs);
+    }
+}
+
+
+void
+p_Dungeon_generate (Dungeon dungeon)
+{
+    int defaultParameters[] = {
+        arg.iterations,
+        arg.roomSize,
+        arg.minRoomSize,
+        arg.roomOffset,
+        arg.rectOffset,
+        arg.corridorWidth,
+        arg.numCorridors,
+        e_DungeonDesign_Catacomb,
+        5 // numStairs
+    };
+
+    // set global parameters
+    for (int i = 0; i < dungeon.numLevels * e_DungeonParameter_SIZE_; i++)
+    {
+        int index = i % e_DungeonParameter_SIZE_;
+        dungeon.parameters[i] = defaultParameters[index];
+    }
+
+    p_dungeon_parse_levels (arg.levelData, dungeon.parameters, dungeon.numLevels);
+
+    // set seeds per level
+    dungeon.seeds = malloc (sizeof (int) * dungeon.numLevels);
+    for (int i = 0; i < dungeon.numLevels; i++)
+        dungeon.seeds[i] = rng ();
+
+    p_Dungeon_generate_levels (dungeon);
+
+    //Dungeon_generate_design (dungeon);
+    //Dungeon_decay (dungeon);
 }
 
 
@@ -181,30 +264,9 @@ Dungeon_create (const int numLevels, const int width, const int height)
         NULL,
     };
 
-    int bspGlobalParameters[] = {
-        arg.iterations,
-        arg.roomSize,
-        arg.minRoomSize,
-        arg.roomOffset,
-        arg.rectOffset,
-        arg.corridorWidth,
-        arg.numCorridors
-    };
-   
-    dungeon.bspParameters = malloc (sizeof (int) * e_BspParameters_Size * dungeon.numLevels);
+    dungeon.parameters = malloc (sizeof (int) * e_DungeonParameter_SIZE_ * dungeon.numLevels);
 
-    // set global parameters
-    for (int i = 0; i < dungeon.numLevels * e_BspParameters_Size; i++)
-    {
-        int index = i % e_BspParameters_Size;
-        dungeon.bspParameters[i] = bspGlobalParameters[index];
-    }
-    
-    p_dungeon_parse_levels (arg.levelData, dungeon.bspParameters);
-
-
-    Dungeon_generate_design (dungeon);
-    Dungeon_decay (dungeon);
+    p_Dungeon_generate (dungeon);
 
     return dungeon;
 }
@@ -213,6 +275,8 @@ Dungeon_create (const int numLevels, const int width, const int height)
 void
 Dungeon_destroy (Dungeon dungeon)
 {   
+    free (dungeon.seeds);
+    free (dungeon.parameters);
     free (dungeon.map);
 }
 

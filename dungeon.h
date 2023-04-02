@@ -16,15 +16,34 @@ typedef struct
     int numLevels;
     char *map;
 
-    enum DungeonDesign {
-        DungeonDesign_Catacombs = 0,
-        DungeonDesign_Catacombs2,
-        DungeonDesign_Tower,
-    } design;
+    char design;
 
-    int *bspParameters;
+    int *parameters;
+    int *seeds;
 } Dungeon;
 
+
+
+enum DungeonDesign {
+    e_DungeonDesign_Catacomb = 0,
+    e_DungeonDesign_Cave,
+    e_DungeonDesign_SIZE_
+};
+
+
+enum DungeonParameters{
+    e_DungeonParameter_Design = e_BspParameter_SIZE_,
+    e_DungeonParameter_NumStairs,
+    e_DungeonParameter_Decay,
+    e_DungeonParameter_SIZE_
+};
+
+
+static const char *dungeonParameterKeys[] = {
+    "design",
+    "numStairs",
+    "decay"
+};
 
 
 Dungeon Dungeon_create (const int numLevels, const int width, const int height);

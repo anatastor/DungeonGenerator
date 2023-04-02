@@ -5,7 +5,7 @@
 
 int p_bspDebug = 0;
 int p_roomCount = 0;
-int p_bsp_parameters[e_BspParameters_Size] = {0};
+int p_bsp_parameters[e_BspParameter_SIZE_] = {0};
 
 
 /*** private functions ***/
@@ -17,7 +17,7 @@ bsp_divide (Rect *const rect)
     int f1 = d / 2;
     int f2 = d - d / 2 - 1;
     
-    int offset = p_bsp_parameters[e_BspParameters_RectOffset];
+    int offset = p_bsp_parameters[e_BspParameter_RectOffset];
 
     if (rect->width >= rect->height)
         rect->split.x = rect->pos.x + rng_between (f1 * rect->width / d, f2 * rect->width / d);
@@ -176,7 +176,7 @@ bsp_corridor_overlap (Room *const left, Room *const right)
     int min = 0;
     int max = 0;
 
-    int cw = p_bsp_parameters[e_BspParameters_CorridorWidth];
+    int cw = p_bsp_parameters[e_BspParameter_CorridorWidth];
 
 
     if (room_overlap (left, right, 0, &min, &max))
@@ -226,7 +226,7 @@ bsp_corridor (Rect *const rect, const Vec2 p)
     // pick room from right tree closest to result of left tree
     Room *right = room_closest_to_vec2 (rect->childRight, left->center); 
 
-    int cw = p_bsp_parameters[e_BspParameters_CorridorWidth];
+    int cw = p_bsp_parameters[e_BspParameter_CorridorWidth];
 
     Room **room;
     Room *tmp;
@@ -296,9 +296,9 @@ bsp_set_debug () {p_bspDebug = 1;}
 
 
 void
-bsp_set_parameters (int *parameters)
+bsp_set_parameters (int *const parameters)
 {   
-    for (int i = 0; i < e_BspParameters_Size; i++)
+    for (int i = 0; i < e_BspParameter_SIZE_; i++)
         p_bsp_parameters[i] = parameters[i];
 }
 
@@ -310,9 +310,9 @@ bsp (Rect **r, const int iteration, const int numCorridors)
         return;
     Rect *rect = *r;
 
-    int minRoomSize = p_bsp_parameters[e_BspParameters_MinRoomSize];
-    int roomSize = p_bsp_parameters[e_BspParameters_RoomSize];
-    int roomOffset = p_bsp_parameters[e_BspParameters_RoomOffset];
+    int minRoomSize = p_bsp_parameters[e_BspParameter_MinRoomSize];
+    int roomSize = p_bsp_parameters[e_BspParameter_RoomSize];
+    int roomOffset = p_bsp_parameters[e_BspParameter_RoomOffset];
 
     if (rect->width < minRoomSize + roomOffset ||
             rect->height < minRoomSize + roomOffset)
