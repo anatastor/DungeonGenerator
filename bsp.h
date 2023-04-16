@@ -18,6 +18,7 @@ enum
     e_BspParameter_RoomSize,
     e_BspParameter_MinRoomSize,
     e_BspParameter_RoomOffset,
+    e_BspParameter_RoomChance,
     e_BspParameter_RectOffset,
     e_BspParameter_CorridorWidth,
     e_BspParameter_NumCorridors,
@@ -30,6 +31,7 @@ static const char *bsp_parameter_keys[] = {
     "roomSize",
     "minRoomSize",
     "roomOffset",
+    "roomChance",
     "rectOffset",
     "corridorWidth",
     "numCorridors"

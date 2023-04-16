@@ -33,6 +33,7 @@ struct Arguments
     float dungeonDecay;
     int rectOffset;
     char levelData[BUFFER_SIZE];
+    int roomChance;
 };
 
 
@@ -63,6 +64,7 @@ static struct argp_option options[] = {
         "each level is expected to start with the level id starting from 0 "
         "if no options for a level are given, the global options will be used, "
         "thus it is possible to further customize only one out of a number of levels"},
+    {"roomChance", 510, "pct (0 - 100)", 0, "Chance to place a room in pct (0 - 100)"},
     {0}
 };
 

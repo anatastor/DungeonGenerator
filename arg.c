@@ -25,7 +25,8 @@ struct Arguments arg = {
     0, // dungeonDesign
     0.0, // dungeonDecay
     0, // rectOffset
-    {'\0'} // levelData
+    {'\0'}, // levelData
+    100 // roomChance
 };
 
 
@@ -102,6 +103,10 @@ parse_opt (int key, char *args, struct argp_state *state)
 
         case 'L':
             cstr_remove (args, arg.levelData, " ");
+            break;
+
+        case 510:
+            arg.roomChance = atoi (args);
             break;
 
         default:

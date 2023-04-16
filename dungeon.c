@@ -221,6 +221,7 @@ p_Dungeon_generate (Dungeon dungeon)
         arg.roomSize,
         arg.minRoomSize,
         arg.roomOffset,
+        arg.roomChance, // pct roomChance
         arg.rectOffset,
         arg.corridorWidth,
         arg.numCorridors,

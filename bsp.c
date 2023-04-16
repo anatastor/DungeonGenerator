@@ -364,6 +364,16 @@ bsp (Rect **r, const int iteration, const int numCorridors)
     }
     else if (! rect->childLeft && ! rect->childRight) // end node --> create new room
     {
+        int chance = p_bsp_parameters[e_BspParameter_RoomChance];
+        if (rng () % 100 > chance)
+        {
+            // remove rect
+            free (*r);
+            *r = NULL;
+            return;
+        }
+
+
         int w = rng_between (minRoomSize, rect->width - 2 * roomOffset);
         int h = rng_between (minRoomSize, rect->height - 2 * roomOffset);
         for (int i = 0; i < abs (roomSize); i++)
