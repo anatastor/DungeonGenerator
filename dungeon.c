@@ -164,15 +164,46 @@ void
 p_Dungeon_generate_level_cave (char *const map,
         const int mapWidth, const int mapHeight, int *const parameters)
 {   
-    // TODO set numDwarves and steps relativ to map size
-    int numDwarves = 13;
-    int steps = 9973;
+    int numDwarves = (mapWidth * mapHeight) % 13;
+    if (numDwarves < 5) numDwarves = 5;
+    
+    int steps = (mapWidth * mapHeight) / 7;
+    printf ("Cave: %i\t%i\n", numDwarves, steps);
     for (int i = 0; i < numDwarves; i++)
     {
         int pos = rng () % (mapWidth * mapHeight);
         map_drunken_dwarf_step (map, mapWidth, mapHeight, pos, steps);
     }
     
+    // dilatation for bigger corridors
+    map_dilatation (map, mapWidth, mapHeight);
+}
+
+
+void
+p_Dungeon_generate_level_cave_continuous (char *const map,
+        const int mapWidth, const int mapHeight, int *const parameters)
+{   
+    int numDwarves = (mapWidth * mapHeight) % 13;
+    if (numDwarves < 7) numDwarves *= 2;
+
+    int steps = (mapWidth * mapHeight) / 7;
+
+    printf ("CaveC:\t%i\t%i\n", numDwarves, steps);
+
+    int pos = rng () % (mapWidth * mapHeight);
+    map_drunken_dwarf_step (map, mapWidth, mapHeight, pos, steps);
+    
+    for (; numDwarves;)
+    {
+        int pos = rng () % (mapWidth * mapHeight);
+        if (map[pos] == TileType_Floor)
+        {
+            map_drunken_dwarf_step (map, mapWidth, mapHeight, pos, steps);
+            numDwarves--;
+        }
+    }
+
     // dilatation for bigger corridors
     map_dilatation (map, mapWidth, mapHeight);
 }
@@ -189,14 +220,17 @@ p_Dungeon_generate_levels (Dungeon dungeon)
         switch (design)
         {
             case e_DungeonDesign_Catacomb:
-                printf ("%i\tCatacomb\n", i);
                 p_Dungeon_generate_level_catacomb (&dungeon.map[i * dungeon.width * dungeon.height],
                         dungeon.width, dungeon.height, &dungeon.parameters[i * e_DungeonParameter_SIZE_]);
                 break;
 
             case e_DungeonDesign_Cave:
-                printf ("%i\tCave\n", i);
                 p_Dungeon_generate_level_cave (&dungeon.map[i * dungeon.width * dungeon.height],
+                        dungeon.width, dungeon.height, &dungeon.parameters[i * e_DungeonParameter_SIZE_]);
+                break;
+
+            case e_DungeonDesign_CaveContinuous:
+                p_Dungeon_generate_level_cave_continuous (&dungeon.map[i * dungeon.width * dungeon.height],
                         dungeon.width, dungeon.height, &dungeon.parameters[i * e_DungeonParameter_SIZE_]);
                 break;
 

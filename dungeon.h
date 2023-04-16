@@ -27,6 +27,7 @@ typedef struct
 enum DungeonDesign {
     e_DungeonDesign_Catacomb = 0,
     e_DungeonDesign_Cave,
+    e_DungeonDesign_CaveContinuous,
     e_DungeonDesign_SIZE_
 };
 
