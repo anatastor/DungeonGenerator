@@ -3,6 +3,20 @@
 
 // ----- private functions -----
 
+
+
+int p_stairpos_valid (const int pos, const int prev, const int width, const int height)
+{
+    Vec2 vpos = {pos % width, pos / width};
+    Vec2 vprev = {prev % width, prev / width};
+
+    if (vec2_distance (vpos, vprev) > 9)
+        return 1;
+
+    return 0;
+}
+
+
 int
 p_Dungeon_generate_stairs (char *const map_h, char *const map_l,
         const int width, const int height, const int numStairs)
@@ -31,7 +45,7 @@ p_Dungeon_generate_stairs (char *const map_h, char *const map_l,
             map_l[pos] = TileType_Stair_Up;
             stairCount++;
         }
-        else if (prevStairPos && pos - prevStairPos >= width / 2)
+        else if (prevStairPos && p_stairpos_valid (pos, prevStairPos, width, height))
         {
             prevStairPos = pos;
             map_h[pos] = TileType_Stair_Down;
@@ -147,8 +161,14 @@ void
 p_Dungeon_generate_level_catacomb (char *const map,
         const int mapWidth, const int mapHeight, int *const parameters)
 {
-    int width = rng_between (5 * mapWidth / 7, 6 * mapWidth / 7);
-    int height = rng_between (5 * mapHeight / 7, 6 * mapHeight / 7);
+    //int width = rng_between (5 * mapWidth / 7, 6 * mapWidth / 7);
+    //int height = rng_between (5 * mapHeight / 7, 6 * mapHeight / 7);
+
+    //int width = rng_between (8 * mapWidth / 10, 9 * mapWidth / 10);
+    //int height = rng_between (8 * mapHeight / 10, 9 * mapHeight / 10);
+    
+    int width = mapWidth - 2;
+    int height = mapHeight - 2;
     
     Vec2 pos = vec2 (rng_between (0, mapWidth - width),
             rng_between (0, mapHeight - height));

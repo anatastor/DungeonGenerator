@@ -230,16 +230,17 @@ map_drunken_dwarf_step (char *const map, const int width, const int height, cons
     if (steps % 13 == 0) rng_seed (steps / 13 << 16 | pos * steps);
     if (steps % 97 == 0) rng_seed (steps / 97 << 16 | pos * steps);
 
-    if (pos / width == 0) return; // ignore y = 0
-    if (pos / width == height - 1) return; // ignore y = mapHeight
-    if (pos % width == 0) return; // ignore x = 0
-    if (pos % width == width - 1) return; // ignore x = mapWidth
+    if (pos / width <= 0) return; // ignore y = 0
+    if (pos / width >= height - 1) return; // ignore y = mapHeight
+    if (pos % width <= 0) return; // ignore x = 0
+    if (pos % width >= width - 1) return; // ignore x = mapWidth
     
     map[pos] = TileType_Floor;
 
     int r = rng () % 256;
     int weights[] = {192, 128, 64, 0};
     int offset[] = {-width, +1, +width, -1};
+    //int offset[] = {-3 * width, +3, +3 * width, -3};
     for (int i = 0; i < 4; i++)
         if (r >= weights[i])
         {

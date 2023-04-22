@@ -13,6 +13,7 @@ int
 main (int argc, char **argv)
 {   
     /**+ INIT ***/
+    arg.seed = (int) (time (NULL));
     argp_parse (&argp, argc, argv, 0, 0, NULL);
     rng_seed (arg.seed);
     Renderer *renderer = render_create (arg.mapWidth * arg.gridSize, arg.mapHeight * arg.gridSize);

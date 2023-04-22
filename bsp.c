@@ -10,6 +10,10 @@ int p_bsp_parameters[e_BspParameter_SIZE_] = {0};
 
 /*** private functions ***/
 
+
+int p_min (const int v1, const int v2) {return (v1 < v2) ? v1 : v2;}
+int p_max (const int v1, const int v2) {return (v1 > v2) ? v1 : v2;}
+
 void
 bsp_divide (Rect *const rect)
 {
@@ -69,7 +73,7 @@ room_create (const Vec2 pos, const int width, const int height)
     
     if (p_bspDebug)
     {
-        printf ("[%i]\n\tTopLeft: (%i, %i)\n\tw: %i\th: %i\n", room->num,
+        printf ("[%i] (%i, %i) %i | %i\n", room->num,
                 room->pos.x, room->pos.y,
                 room->width, room->height);
     }
@@ -215,6 +219,8 @@ bsp_corridor_overlap (Room *const left, Room *const right)
                     max - min - 1, dy);
     }
 
+    if (p_bspDebug) printf ("no overlap found\n");
+
     return NULL;
 }
 
@@ -252,30 +258,33 @@ bsp_corridor (Rect *const rect, const Vec2 p)
 
     if (abs (dx) >= abs (dy))
     {   
-        int x = (dx > 0) ? left->pos.x + left->width : left->pos.x; 
-
-        if (left->height > cw)
-            *room = room_create (vec2 (x, left->pos.y + (left->height - cw) / 2),
-                    right->pos.x + right->width - x, cw);
-        else
-            *room = room_create (vec2 (x, left->pos.y + 1),
-                    right->pos.x + right->width - x, left->height - 2);
+        int x1 = p_min (left->pos.x, right->pos.x);
+        int x2 = p_max (left->pos.x + left->width, right->pos.x + right->width);
+        *room = room_create (vec2 (x1, left->pos.y + (left->height - cw) / 2),
+                x2 - x1, cw);
 
         (*room)->next = bsp_corridor_overlap (*room, right);
     }
     else
     {   
-        int y = (dy > 0) ? left->pos.y + left->height : left->pos.y;
-
-        if (left->width > cw)
-            *room = room_create (vec2 (left->pos.x + (left->width - cw) / 2, y),
-                    cw, right->pos.y + right->height - y);
-        else
-            *room = room_create (vec2 (left->pos.x + 1, y),
-                    left->width - 2, right->pos.y + right->height - y);
+        int y1 = p_min (left->pos.y, right->pos.y);
+        int y2 = p_max (left->pos.y + left->height, right->pos.y + right->height);
+        *room = room_create (vec2 (left->pos.x + (left->width - cw) / 2, y1),
+                cw, y2 - y1);
 
         (*room)->next = bsp_corridor_overlap (*room, right);
     }   
+}
+
+
+Room *
+bsp_corridor2 (Room *left, Room *right)
+{
+    int corridorWidth = p_bsp_parameters[e_BspParameter_CorridorWidth];
+    Room *tmp = bsp_corridor_overlap (left, right);
+    if (tmp) return tmp;
+    
+    return NULL;
 }
 
 
